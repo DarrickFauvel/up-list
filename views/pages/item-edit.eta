@@ -1,0 +1,169 @@
+<%~ include('../layout', {
+  title: it.item.title ?? 'Edit listing',
+  body: `
+<div class="page-wrap">
+
+  <div class="page-header">
+    <a href="/dashboard" class="back-link">← Dashboard</a>
+    <h1>${it.item.title ?? 'Draft'}</h1>
+    <span class="status-badge status-${it.item.status}">${it.item.status}</span>
+  </div>
+
+  <div
+    class="edit-layout"
+    data-store='{
+      "title":           ${JSON.stringify(it.item.title ?? '')},
+      "description":     ${JSON.stringify(it.item.description ?? '')},
+      "category_id":     ${JSON.stringify(it.item.category_id ?? '')},
+      "condition":       ${JSON.stringify(it.item.condition ?? 'USED_GOOD')},
+      "suggested_price": ${JSON.stringify(it.item.suggested_price ?? '')},
+      "final_price":     ${JSON.stringify(it.item.final_price ?? '')},
+      "imageBase64":     "",
+      "imageMimeType":   "image/jpeg",
+      "notes":           ${JSON.stringify(it.item.notes ?? '')},
+      "generating":      false,
+      "publishing":      false,
+      "saved":           false,
+      "error":           null
+    }'
+  >
+
+    <!-- ── Sidebar ───────────────────────────────────────── -->
+    <aside class="edit-sidebar">
+
+      ${it.item.image_url ? `
+      <img src="${it.item.image_url}" alt="Item photo" class="item-preview-img">
+      ` : ''}
+
+      <form
+        data-on-submit="@post('/items/${it.item.id}/generate', {
+          contentType: 'application/json',
+          body: JSON.stringify({
+            imageBase64: $imageBase64,
+            mimeType:    $imageMimeType,
+            notes:       $notes
+          })
+        })"
+      >
+        <up-camera
+          name="image"
+          data-bind-imageBase64="$imageBase64"
+          data-bind-imageMimeType="$imageMimeType"
+        ></up-camera>
+
+        <div class="field" style="margin-top:1rem">
+          <label for="notes">Notes</label>
+          <textarea
+            id="notes"
+            rows="2"
+            data-bind="$notes"
+            placeholder="Extra details for the AI…"
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-outline btn-full"
+          style="margin-top:0.75rem"
+          data-attr-disabled="$generating"
+        >
+          <span data-show="!$generating">✦ Generate with AI</span>
+          <span data-show="$generating">Generating…</span>
+        </button>
+
+        <p class="error-msg" data-show="$error" data-text="$error" style="margin-top:0.5rem"></p>
+      </form>
+
+    </aside>
+
+    <!-- ── Main fields ───────────────────────────────────── -->
+    <section class="edit-main">
+
+      <up-draft-field
+        label="Title"
+        name="title"
+        maxlength="80"
+        data-bind="$title"
+        data-attr-data-streaming="$generating"
+      ></up-draft-field>
+
+      <up-draft-field
+        label="Description"
+        name="description"
+        multiline
+        data-bind="$description"
+        data-attr-data-streaming="$generating"
+      ></up-draft-field>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="category_id">Category ID</label>
+          <input
+            type="text" id="category_id"
+            data-bind="$category_id"
+            placeholder="e.g. 11450"
+          >
+        </div>
+        <div class="field">
+          <label for="condition">Condition</label>
+          <select id="condition" data-bind="$condition">
+            <option value="">— select —</option>
+            <option value="NEW">New</option>
+            <option value="LIKE_NEW">Like New</option>
+            <option value="USED_GOOD">Used – Good</option>
+            <option value="USED_FAIR">Used – Fair</option>
+            <option value="FOR_PARTS">For Parts</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="suggested_price">AI suggested price (USD)</label>
+          <input
+            type="number" id="suggested_price"
+            step="0.01" min="0"
+            data-bind="$suggested_price"
+            placeholder="—"
+            readonly
+          >
+        </div>
+        <div class="field">
+          <label for="final_price">Your price (USD)</label>
+          <input
+            type="number" id="final_price"
+            step="0.01" min="0"
+            data-bind="$final_price"
+            placeholder="0.00"
+          >
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button
+          class="btn btn-ghost"
+          data-on-click="@put('/items/${it.item.id}', {
+            contentType: 'application/json',
+            body: JSON.stringify({
+              title:       $title,
+              description: $description,
+              category_id: $category_id,
+              condition:   $condition,
+              final_price: $final_price
+            })
+          })"
+        >Save draft</button>
+
+        <up-publish-btn
+          item-id="${it.item.id}"
+          data-attr-disabled="$publishing || $generating || !$title"
+        ></up-publish-btn>
+      </div>
+
+      <p class="saved-msg" data-show="$saved">Draft saved.</p>
+
+    </section>
+
+  </div>
+</div>
+`}) %>

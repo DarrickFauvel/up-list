@@ -1,0 +1,148 @@
+<%~ include('../layout', {
+  title: 'Turn clutter into cash',
+  body: `
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<section class="hero">
+
+  <div class="hero-left">
+    <p class="hero-eyebrow">AI-powered eBay listings</p>
+
+    <h1 class="hero-title">
+      <span class="hero-word">Turn</span>
+      <span class="hero-word">clutter</span>
+      <span class="hero-word">into cash.</span>
+    </h1>
+
+    <p class="hero-sub">
+      Snap a photo, add a note, and UpList's AI writes a
+      complete eBay listing in seconds — title, description,
+      category, condition, price. Publish in one tap.
+    </p>
+
+    <div class="hero-actions">
+      <a href="/auth/register" class="btn btn-primary btn-lg">Start listing free</a>
+      <a href="/auth/login"    class="btn btn-outline btn-lg">Sign in</a>
+    </div>
+
+    <p class="hero-stat">
+      <strong>No subscription.</strong> Just your items, listed and sold.
+    </p>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-card-wrap">
+      <article class="hero-card" aria-label="Example AI-generated listing">
+
+        <div class="hero-card-img">🧥</div>
+
+        <div class="hero-card-body">
+          <span class="hero-ai-tag">AI Generated</span>
+
+          <p class="hero-card-title">
+            Vintage Levi's 501 Denim Jacket — Size M<br>
+            90s Distressed Dark Wash
+          </p>
+
+          <div class="hero-card-tags">
+            <span class="hero-tag">Jackets &amp; Coats</span>
+            <span class="hero-tag">Used – Good</span>
+            <span class="hero-tag">Levi's</span>
+          </div>
+
+          <div class="hero-card-footer">
+            <span class="hero-card-price">$68.00</span>
+            <span class="hero-card-cta">Publish to eBay →</span>
+          </div>
+        </div>
+
+      </article>
+    </div>
+  </div>
+
+</section>
+
+<!-- ── How it works ───────────────────────────────────────── -->
+<section class="steps-section">
+  <p class="section-label">How it works</p>
+
+  <div class="steps-grid">
+
+    <div class="step">
+      <p class="step-num">01</p>
+      <div class="step-icon">📷</div>
+      <h3>Photograph the item</h3>
+      <p>Take a photo or upload one from your camera roll.
+         Add a quick note if you know the brand or size.</p>
+    </div>
+
+    <div class="step-arrow">→</div>
+
+    <div class="step">
+      <p class="step-num">02</p>
+      <div class="step-icon">✦</div>
+      <h3>AI writes the listing</h3>
+      <p>Claude Vision identifies the item and generates a
+         complete eBay-optimised title, description, category,
+         condition, and price — in seconds.</p>
+    </div>
+
+    <div class="step-arrow">→</div>
+
+    <div class="step">
+      <p class="step-num">03</p>
+      <div class="step-icon">🚀</div>
+      <h3>Review and publish</h3>
+      <p>Edit anything you like, set your final price,
+         then hit Publish. UpList sends it straight to eBay
+         via the Sell API.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────── -->
+<section class="features-section">
+  <p class="section-label">Why UpList</p>
+
+  <div class="features-grid">
+
+    <article class="feature-card">
+      <div class="feature-icon-wrap">🔍</div>
+      <h3>Item recognition</h3>
+      <p>The AI reads your photo to identify brand, model, era,
+         and condition — so you don't have to know the eBay
+         category off the top of your head.</p>
+    </article>
+
+    <article class="feature-card">
+      <div class="feature-icon-wrap">✏️</div>
+      <h3>Editable drafts</h3>
+      <p>Every AI-generated field is fully editable before
+         publishing. Adjust the title, swap the price, refine
+         the description — it's your listing.</p>
+    </article>
+
+    <article class="feature-card">
+      <div class="feature-icon-wrap">📶</div>
+      <h3>Works offline</h3>
+      <p>Create drafts on the go with no connection. UpList
+         saves everything locally and syncs to the cloud and
+         eBay when you're back online.</p>
+    </article>
+
+  </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2>Ready to start selling?</h2>
+    <p>Create your account in seconds — no credit card required.</p>
+    <a href="/auth/register" class="btn btn-primary btn-lg">
+      Get started free
+    </a>
+  </div>
+</section>
+
+`}) %>

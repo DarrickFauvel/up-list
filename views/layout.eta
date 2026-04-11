@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c0b09">
+  <title><%= it.title ? `${it.title} — UpList` : 'UpList' %></title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500;1,700&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <%~ it.head ?? '' %>
+
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+
+  <!-- Datastar — https://data-star.dev -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@sudodevnull/datastar"></script>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="site-header">
+  <a href="<%= it.user ? '/dashboard' : '/' %>" class="site-logo">
+    Up<span class="logo-accent">List</span>
+  </a>
+
+  <% if (it.user) { %>
+  <nav class="site-nav">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/settings" class="nav-link">Settings</a>
+    <form action="/auth/logout" method="post">
+      <button type="submit" class="nav-btn">Sign out</button>
+    </form>
+  </nav>
+  <% } else { %>
+  <nav class="site-nav">
+    <a href="/auth/login" class="nav-link">Sign in</a>
+    <a href="/auth/register" class="btn btn-amber-sm">Get started</a>
+  </nav>
+  <% } %>
+</header>
+
+<main class="site-main">
+  <%~ it.body %>
+</main>
+
+<footer class="site-footer">
+  <span>© 2026 UpList</span>
+</footer>
+
+<up-toast></up-toast>
+
+<script type="module" src="/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+</body>
+</html>

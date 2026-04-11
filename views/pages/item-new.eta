@@ -1,0 +1,35 @@
+<%~ include('../layout', {
+  title: 'New listing',
+  body: `
+<div class="page-wrap">
+
+  <div class="page-header">
+    <a href="/dashboard" class="back-link">← Dashboard</a>
+    <h1>New listing</h1>
+  </div>
+
+  <form
+    class="new-item-form"
+    action="/items"
+    method="post"
+    enctype="multipart/form-data"
+  >
+    <up-camera name="image" required></up-camera>
+
+    <div class="field">
+      <label for="notes">Notes <span class="optional">(optional)</span></label>
+      <textarea
+        id="notes"
+        name="notes"
+        rows="3"
+        placeholder="Brand, size, condition — anything useful for the AI…"
+      ></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-full btn-lg">
+      Continue →
+    </button>
+  </form>
+
+</div>
+`}) %>
