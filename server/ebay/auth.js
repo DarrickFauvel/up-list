@@ -22,12 +22,14 @@ export function getAuthUrl() {
     response_type: 'code',
     scope:         SCOPES,
   });
-  return `${AUTH_URL}?${params}`;
+  const url = `${AUTH_URL}?${params}`;
+  console.log('[ebay/getAuthUrl]', url);
+  return url;
 }
 
 export async function handleCallback(code, userId) {
   const credentials = Buffer.from(
-    `${process.env.EBAY_APP_ID}:${process.env.EBAY_CERT_ID}`
+    `${encodeURIComponent(process.env.EBAY_APP_ID)}:${encodeURIComponent(process.env.EBAY_CERT_ID)}`
   ).toString('base64');
 
   const body = new URLSearchParams({
@@ -94,7 +96,7 @@ export async function getAccessToken(userId) {
 
 async function refreshToken(userId, refreshToken) {
   const credentials = Buffer.from(
-    `${process.env.EBAY_APP_ID}:${process.env.EBAY_CERT_ID}`
+    `${encodeURIComponent(process.env.EBAY_APP_ID)}:${encodeURIComponent(process.env.EBAY_CERT_ID)}`
   ).toString('base64');
 
   const resp = await fetch(TOKEN_URL, {
