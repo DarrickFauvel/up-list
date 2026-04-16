@@ -1,54 +1,21 @@
-/**
- * <up-modal>
- *
- * Generic modal shell using the native <dialog> element.
- *
- * Usage:
- *   <up-modal id="confirm-modal">
- *     <span slot="title">Confirm delete</span>
- *     <p>Are you sure?</p>
- *     <div slot="actions">
- *       <button data-action="close">Cancel</button>
- *       <button data-action="confirm">Delete</button>
- *     </div>
- *   </up-modal>
- *
- *   document.getElementById('confirm-modal').open();
- *   modal.addEventListener('confirm', () => { ... });
- */
 class UpModal extends HTMLElement {
   connectedCallback() {
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.innerHTML = `
-      <style>
-        dialog {
-          border: none;
-          border-radius: 1rem;
-          padding: 0;
-          max-width: min(90vw, 32rem);
-          width: 100%;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        }
-        dialog::backdrop { background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
-        .modal-inner { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-        .modal-title { font-size: 1.1rem; font-weight: 700; }
-        .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
-      </style>
-      <dialog>
-        <div class="modal-inner">
-          <div class="modal-title"><slot name="title"></slot></div>
-          <slot></slot>
-          <div class="modal-actions"><slot name="actions"></slot></div>
-        </div>
-      </dialog>
-    `;
+    this.classList.add('up-modal');
 
-    const dialog = this.shadowRoot.querySelector('dialog');
-    dialog.addEventListener('click', e => {
-      if (e.target === dialog) this.close();
-    });
+    const dialog = document.createElement('dialog');
+    dialog.className = 'um-dialog';
 
-    // Bubble slot action events
+    const inner = document.createElement('div');
+    inner.className = 'um-inner';
+
+    while (this.firstChild) inner.appendChild(this.firstChild);
+    dialog.appendChild(inner);
+    this.appendChild(dialog);
+
+    // Close on backdrop click
+    dialog.addEventListener('click', e => { if (e.target === dialog) this.close(); });
+
+    // data-action dispatcher
     this.addEventListener('click', e => {
       const action = e.target.closest('[data-action]')?.dataset.action;
       if (!action) return;
@@ -57,8 +24,62 @@ class UpModal extends HTMLElement {
     });
   }
 
-  open()  { this.shadowRoot.querySelector('dialog').showModal(); }
-  close() { this.shadowRoot.querySelector('dialog').close(); }
+  open() {
+    const dialog = this.querySelector('dialog');
+    if (!dialog) return;
+    dialog.classList.remove('is-closing');
+    dialog.showModal();
+  }
+
+  close() {
+    const dialog = this.querySelector('dialog');
+    if (!dialog || dialog.classList.contains('is-closing')) return;
+    dialog.classList.add('is-closing');
+    dialog.addEventListener('animationend', () => {
+      dialog.classList.remove('is-closing');
+      dialog.close();
+    }, { once: true });
+  }
 }
 
 customElements.define('up-modal', UpModal);
+
+// Programmatic delete-confirmation modal.
+// Usage: const ok = await confirmDelete('This will be permanently deleted.');
+window.confirmDelete = function(message = 'This item will be permanently deleted.') {
+  return new Promise(resolve => {
+    const el = document.createElement('up-modal');
+    el.innerHTML = `
+      <div class="um-icon um-icon--danger" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </div>
+      <div class="um-title">Are you sure?</div>
+      <p class="um-body">${message}</p>
+      <div class="um-actions">
+        <button class="btn btn-ghost" data-action="close">Cancel</button>
+        <button class="btn btn-danger um-btn-delete">Delete</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+      el.close();
+      setTimeout(() => el.remove(), 350);
+    };
+
+    // ESC key / native dialog close
+    el.querySelector('dialog').addEventListener('close', () => finish(false), { once: true });
+    el.querySelector('.um-btn-delete').addEventListener('click', () => finish(true));
+
+    requestAnimationFrame(() => el.open());
+  });
+};

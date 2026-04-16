@@ -1,0 +1,46 @@
+<div class="page-wrap">
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+    <span class="breadcrumb-current">Settings</span>
+  </nav>
+
+  <div class="page-header">
+    <h1>Settings</h1>
+  </div>
+
+  <section class="settings-section">
+    <h2>Account</h2>
+    <p><strong>Email</strong> &nbsp; <%= it.user.email %></p>
+    <% if (it.user.name) { %>
+    <p><strong>Name</strong> &nbsp; <%= it.user.name %></p>
+    <% } %>
+  </section>
+
+  <section class="settings-section">
+    <h2>eBay connection</h2>
+    <% if (it.ebayConnected) { %>
+      <p class="status-connected">Connected</p>
+      <form action="/ebay/disconnect" method="post" style="margin-top:0.5rem">
+        <button type="submit" class="btn btn-danger">Disconnect eBay</button>
+      </form>
+    <% } else { %>
+      <p>Connect your eBay account to publish listings directly.</p>
+      <% if (it.ebayError) { %>
+        <p class="error-msg">Connection failed — please try again.</p>
+      <% } %>
+      <a href="/ebay/connect" class="btn btn-primary" style="align-self:flex-start;margin-top:0.5rem">
+        Connect eBay account
+      </a>
+    <% } %>
+  </section>
+
+  <section class="settings-section">
+    <h2>Session</h2>
+    <form action="/auth/logout" method="post">
+      <button type="submit" class="btn btn-ghost">Sign out</button>
+    </form>
+  </section>
+
+</div>

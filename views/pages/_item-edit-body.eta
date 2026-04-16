@@ -1,0 +1,262 @@
+<%
+  const initSignals = JSON.stringify({
+    generating:      false,
+    error:           '',
+    imageBase64:     '',
+    imageMimeType:   'image/jpeg',
+    title:           it.item.title ?? '',
+    description:     it.item.description ?? '',
+    category_id:     String(it.item.category_id ?? ''),
+    condition:       it.item.condition ?? '',
+    suggested_price: it.item.suggested_price != null ? String(it.item.suggested_price) : '',
+    final_price:     it.item.final_price != null ? String(it.item.final_price) : '',
+    notes:           it.item.notes ?? '',
+  });
+%>
+<div class="page-wrap" data-signals="<%= initSignals %>">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+    <span class="breadcrumb-current"><%= it.item.title || 'Draft' %></span>
+  </nav>
+
+  <div class="page-header">
+    <h1 id="page-title"><%= it.item.title ?? 'Draft' %></h1>
+    <span class="status-badge status-<%= it.item.status %>" id="status-badge"><%= it.item.status %></span>
+  </div>
+
+  <div class="edit-layout">
+
+    <!-- ── Sidebar ───────────────────────────────────────── -->
+    <aside class="edit-sidebar">
+
+      <!-- Multi-photo grid (eBay allows up to 12) -->
+      <div class="photo-manager" id="photo-manager">
+        <div class="photo-grid" id="photo-grid">
+          <!-- Thumbnails injected by JS -->
+          <button type="button" class="photo-add-btn" id="photo-add-btn" aria-label="Add photo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add photo
+          </button>
+        </div>
+        <input type="file" accept="image/*" id="photo-file-input" style="display:none" multiple>
+      </div>
+
+      <!-- Hidden signal inputs so Datastar carries primary photo to generate -->
+      <input type="text" id="sig-imageBase64" data-bind:imageBase64 style="display:none" aria-hidden="true" tabindex="-1">
+      <input type="text" id="sig-imageMimeType" data-bind:imageMimeType style="display:none" aria-hidden="true" tabindex="-1">
+
+      <div class="field" style="margin-top:1rem">
+        <label for="notes">Notes</label>
+        <textarea id="notes" rows="2" placeholder="Extra details for the AI…" data-bind:notes><%= it.item.notes ?? '' %></textarea>
+      </div>
+
+      <button type="button" class="btn btn-outline btn-full"
+        data-attr:disabled="$generating"
+        data-on:click="@post('/items/<%= it.item.id %>/generate')">
+        <span data-show="!$generating">✦ Generate with AI</span>
+        <span data-show="$generating" style="display:none">Generating…</span>
+      </button>
+
+      <p class="error-msg" data-show="$error" data-text="$error" style="display:none"></p>
+
+    </aside>
+
+    <!-- ── Main fields ───────────────────────────────────── -->
+    <section class="edit-main">
+
+      <div class="field">
+        <label for="f-title">Title</label>
+        <input type="text" id="f-title" name="title" maxlength="80"
+          data-bind:title
+          data-attr:data-streaming="$generating ? 'true' : 'false'">
+      </div>
+
+      <div class="field">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" rows="6"
+          data-bind:description
+          data-attr:data-streaming="$generating ? 'true' : 'false'"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-category">Category ID</label>
+          <input type="text" id="f-category" name="category_id" placeholder="e.g. 11450"
+            data-bind:category_id
+            data-attr:data-streaming="$generating ? 'true' : 'false'">
+        </div>
+        <div class="field">
+          <label for="f-condition">Condition</label>
+          <select id="f-condition" name="condition"
+            data-bind:condition
+            data-attr:data-streaming="$generating ? 'true' : 'false'">
+            <option value="">— select —</option>
+            <% for (const opt of [['NEW','New'],['LIKE_NEW','Like New'],['USED_GOOD','Used – Good'],['USED_FAIR','Used – Fair'],['FOR_PARTS','For Parts']]) { %>
+            <option value="<%= opt[0] %>"><%= opt[1] %></option>
+            <% } %>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-suggested">AI suggested price (USD)</label>
+          <input type="number" id="f-suggested" name="suggested_price" step="0.01" min="0"
+            data-bind:suggested_price
+            placeholder="—" readonly>
+        </div>
+        <div class="field">
+          <label for="f-price">Your price (USD)</label>
+          <input type="number" id="f-price" name="final_price" step="0.01" min="0"
+            data-bind:final_price
+            placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="btn btn-ghost" id="save-btn">Save draft</button>
+        <p class="saved-msg" id="saved-msg" style="display:none">Draft saved.</p>
+        <up-publish-btn item-id="<%= it.item.id %>"></up-publish-btn>
+        <button type="button" class="btn btn-ghost btn-danger" id="delete-btn">Delete</button>
+      </div>
+
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const ITEM_ID    = '<%= it.item.id %>';
+  const MAX_PHOTOS = 12;
+
+  // ── Photo manager ────────────────────────────────────────
+  // Load existing photos from DB (images column = JSON array, or fall back to image_url)
+  let initImages = [];
+  try {
+    const raw = <%~ JSON.stringify(it.item.images ?? null) %>;
+    if (raw) {
+      initImages = JSON.parse(raw);
+    } else {
+      const img = <%~ JSON.stringify(it.item.image_url ?? null) %>;
+      if (img) initImages = [img];
+    }
+  } catch (e) {}
+
+  // photos = [{ dataUrl, base64, mimeType }, ...]
+  let photos = initImages.map(dataUrl => {
+    const comma = dataUrl.indexOf(',');
+    const semi  = dataUrl.indexOf(';');
+    return { dataUrl, base64: dataUrl.slice(comma + 1), mimeType: dataUrl.slice(5, semi) };
+  });
+
+  function renderPhotos() {
+    const grid   = document.getElementById('photo-grid');
+    const addBtn = document.getElementById('photo-add-btn');
+    grid.innerHTML = '';
+
+    photos.forEach((photo, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb' + (i === 0 ? ' photo-thumb--primary' : '');
+      thumb.innerHTML = `
+        <img src="${photo.dataUrl}" alt="Photo ${i + 1}">
+        <button type="button" class="photo-thumb-remove" data-index="${i}" aria-label="Remove photo">&times;</button>
+        ${i === 0 ? '<span class="photo-thumb-label">Primary</span>' : ''}
+      `;
+      grid.appendChild(thumb);
+    });
+
+    if (photos.length < MAX_PHOTOS) {
+      grid.appendChild(addBtn);
+    }
+
+    updatePrimarySignal();
+  }
+
+  function updatePrimarySignal() {
+    const b64Input  = document.getElementById('sig-imageBase64');
+    const mimeInput = document.getElementById('sig-imageMimeType');
+    const primary   = photos[0];
+    if (b64Input) {
+      b64Input.value = primary?.base64 ?? '';
+      b64Input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (mimeInput) {
+      mimeInput.value = primary?.mimeType ?? 'image/jpeg';
+      mimeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  // Remove photo
+  document.getElementById('photo-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.photo-thumb-remove');
+    if (!btn) return;
+    photos.splice(Number(btn.dataset.index), 1);
+    renderPhotos();
+  });
+
+  // Add photos via file input
+  const fileInput = document.getElementById('photo-file-input');
+  document.getElementById('photo-add-btn').addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async e => {
+    const files = Array.from(e.target.files ?? []);
+    const slots = MAX_PHOTOS - photos.length;
+    for (const file of files.slice(0, slots)) {
+      const dataUrl = await readFileAsDataUrl(file);
+      const comma = dataUrl.indexOf(',');
+      const semi  = dataUrl.indexOf(';');
+      photos.push({ dataUrl, base64: dataUrl.slice(comma + 1), mimeType: dataUrl.slice(5, semi) });
+    }
+    fileInput.value = '';
+    renderPhotos();
+  });
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  renderPhotos();
+
+  // ── Save draft ──────────────────────────────────────────
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const savedEl = document.getElementById('saved-msg');
+    const saveBtn = document.getElementById('save-btn');
+    savedEl.style.display = 'none';
+    saveBtn.disabled = true;
+
+    await fetch(`/items/${ITEM_ID}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title:       document.getElementById('f-title').value,
+        description: document.getElementById('f-description').value,
+        category_id: document.getElementById('f-category').value,
+        condition:   document.getElementById('f-condition').value,
+        final_price: document.getElementById('f-price').value,
+        image_url:   photos[0]?.dataUrl ?? null,
+        images:      JSON.stringify(photos.map(p => p.dataUrl)),
+      }),
+    });
+
+    savedEl.style.display = '';
+    saveBtn.disabled = false;
+    setTimeout(() => { savedEl.style.display = 'none'; }, 3000);
+  });
+
+  // ── Delete draft ────────────────────────────────────────
+  document.getElementById('delete-btn').addEventListener('click', async () => {
+    if (!await confirmDelete('This listing will be permanently deleted.')) return;
+    await fetch(`/items/${ITEM_ID}`, { method: 'DELETE' });
+    window.location.href = '/dashboard';
+  });
+</script>

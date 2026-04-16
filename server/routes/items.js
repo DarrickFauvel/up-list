@@ -20,17 +20,26 @@ router.get('/', async (req, res) => {
 
 router.get('/new', (req, res) => res.render('pages/item-new'));
 
-// ── Create blank draft ────────────────────────────────────────────────────────
+// ── Create draft ──────────────────────────────────────────────────────────────
 
 router.post('/', async (req, res) => {
+  const { imageBase64, imageMimeType, notes } = req.body ?? {};
   const id  = nanoid();
   const now = Date.now();
+
+  const imageUrl = imageBase64
+    ? `data:${imageMimeType ?? 'image/jpeg'};base64,${imageBase64}`
+    : null;
+
   await db.execute({
-    sql: `INSERT INTO items (id, user_id, status, created_at, updated_at)
-          VALUES (?, ?, 'draft', ?, ?)`,
-    args: [id, req.user.id, now, now],
+    sql: `INSERT INTO items (id, user_id, status, image_url, notes, created_at, updated_at)
+          VALUES (?, ?, 'draft', ?, ?, ?, ?)`,
+    args: [id, req.user.id, imageUrl, notes || null, now, now],
   });
-  res.redirect(`/items/${id}`);
+
+  const redirect = `/items/${id}`;
+  if (req.is('json')) return res.json({ redirect });
+  res.redirect(redirect);
 });
 
 // ── Edit / review draft ───────────────────────────────────────────────────────
@@ -56,18 +65,20 @@ router.post('/:id/generate', aiStream);
 // ── Save draft fields ─────────────────────────────────────────────────────────
 
 router.put('/:id', async (req, res) => {
-  const { title, description, item_specifics, category_id, condition, final_price } = req.body;
+  const { title, description, item_specifics, category_id, condition, final_price, image_url, images } = req.body;
 
   await db.execute({
     sql: `UPDATE items
           SET title=?, description=?, item_specifics=?, category_id=?,
-              condition=?, final_price=?, updated_at=?
+              condition=?, final_price=?, image_url=?, images=?, updated_at=?
           WHERE id=? AND user_id=?`,
     args: [
       title, description,
       item_specifics ? JSON.stringify(item_specifics) : null,
       category_id, condition,
       final_price ? Number(final_price) : null,
+      image_url ?? null,
+      images ?? null,
       Date.now(),
       req.params.id, req.user.id,
     ],

@@ -12,10 +12,9 @@
  *   'up-list-sync' BackgroundSync tag → POST /sync/batch
  */
 
-const CACHE_NAME    = 'uplist-v1';
+const CACHE_NAME    = 'uplist-v2';
 const SHELL_ASSETS  = [
   '/',
-  '/dashboard',
   '/css/reset.css',
   '/css/base.css',
   '/css/components.css',
@@ -55,12 +54,14 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Network-only: SSE, mutations, external resources
+  // Network-only: non-GET, SSE, mutations, external, or auth-protected pages
+  const protectedPages = ['/dashboard', '/items', '/settings', '/ebay', '/sync'];
   if (
     request.method !== 'GET' ||
     url.pathname.includes('/generate') ||
     url.pathname.includes('/publish') ||
-    url.origin !== self.location.origin
+    url.origin !== self.location.origin ||
+    protectedPages.some(p => url.pathname === p || url.pathname.startsWith(p + '/'))
   ) {
     return; // fall through to network
   }

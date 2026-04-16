@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "nodemon --watch server --watch views --ext js,eta server/index.js"
+    "dev": "node --watch --watch-path=server --watch-path=views server/index.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -18,8 +18,5 @@
     "multer": "^1.4.5-lts.1",
     "nanoid": "^5.0.9",
     "openai": "^4.86.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.9"
   }
 }

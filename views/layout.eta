@@ -3,27 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c0b09">
+  <meta name="theme-color" content="#3665F3">
   <title><%= it.title ? `${it.title} — UpList` : 'UpList' %></title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/icon-192.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500;1,700&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <%~ it.head ?? '' %>
+
+  <!-- Datastar -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@starfederation/datastar@latest/dist/datastar.js"></script>
 
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
 
-  <!-- Datastar — https://data-star.dev -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@sudodevnull/datastar"></script>
+  <!-- QR Code -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
-<div class="grain" aria-hidden="true"></div>
 
 <header class="site-header">
   <a href="<%= it.user ? '/dashboard' : '/' %>" class="site-logo">
@@ -33,15 +35,40 @@
   <% if (it.user) { %>
   <nav class="site-nav">
     <a href="/dashboard" class="nav-link">Dashboard</a>
-    <a href="/settings" class="nav-link">Settings</a>
-    <form action="/auth/logout" method="post">
-      <button type="submit" class="nav-btn">Sign out</button>
-    </form>
+    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+        <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/>
+      </svg>
+    </button>
+    <div class="nav-avatar-wrap" id="nav-avatar-wrap">
+      <button class="nav-avatar" id="nav-avatar-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+        <% if (it.user.avatarUrl) { %>
+          <img src="<%= it.user.avatarUrl %>" alt="<%= it.user.name ?? it.user.email %>" class="nav-avatar-img">
+        <% } else { %>
+          <span class="nav-avatar-initials"><%= (it.user.name ?? it.user.email).charAt(0).toUpperCase() %></span>
+        <% } %>
+      </button>
+      <div class="nav-dropdown" id="nav-dropdown" hidden>
+        <a href="/settings" class="nav-dropdown-item">Settings</a>
+        <form action="/auth/logout" method="post">
+          <button type="submit" class="nav-dropdown-item nav-dropdown-item--danger">Sign out</button>
+        </form>
+      </div>
+    </div>
   </nav>
   <% } else { %>
   <nav class="site-nav">
+    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+        <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 20h3"/>
+      </svg>
+    </button>
     <a href="/auth/login" class="nav-link">Sign in</a>
-    <a href="/auth/register" class="btn btn-amber-sm">Get started</a>
+    <a href="/auth/register" class="btn btn-primary" style="border-radius:999px;padding:.45em 1.2em;font-size:.85rem">Get started</a>
   </nav>
   <% } %>
 </header>
@@ -52,14 +79,70 @@
 
 <footer class="site-footer">
   <span>© 2026 UpList</span>
+  <span class="footer-dev">Built by <a href="https://darrickdevelops.com" target="_blank" rel="noopener">darrickdevelops.com</a></span>
 </footer>
 
 <up-toast></up-toast>
+
+<!-- QR code modal -->
+<dialog id="qr-dialog" class="qr-dialog">
+  <div class="qr-dialog-inner">
+    <div class="qr-dialog-header">
+      <span class="qr-dialog-title">QR Code</span>
+      <button class="qr-close-btn" id="qr-close" aria-label="Close">✕</button>
+    </div>
+    <div id="qr-container"></div>
+    <p class="qr-url" id="qr-url"></p>
+  </div>
+</dialog>
 
 <script type="module" src="/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
+  }
+
+  // QR code modal
+  const qrBtn       = document.getElementById('qr-btn');
+  const qrDialog    = document.getElementById('qr-dialog');
+  const qrClose     = document.getElementById('qr-close');
+  const qrContainer = document.getElementById('qr-container');
+  const qrUrlEl     = document.getElementById('qr-url');
+  let   qrInstance  = null;
+
+  qrBtn.addEventListener('click', () => {
+    const url = window.location.href;
+    qrUrlEl.textContent = url;
+    qrContainer.innerHTML = '';
+    qrInstance = new QRCode(qrContainer, {
+      text: url,
+      width: 220,
+      height: 220,
+      colorDark: '#191919',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+    qrDialog.showModal();
+  });
+
+  qrClose.addEventListener('click', () => qrDialog.close());
+  qrDialog.addEventListener('click', e => { if (e.target === qrDialog) qrDialog.close(); });
+
+  // Avatar dropdown
+  const avatarWrap = document.getElementById('nav-avatar-wrap');
+  const avatarBtn  = document.getElementById('nav-avatar-btn');
+  const navDropdown = document.getElementById('nav-dropdown');
+  if (avatarBtn && navDropdown) {
+    avatarBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = !navDropdown.hidden;
+      navDropdown.hidden = open;
+      avatarBtn.setAttribute('aria-expanded', String(!open));
+    });
+    document.addEventListener('click', () => {
+      navDropdown.hidden = true;
+      avatarBtn.setAttribute('aria-expanded', 'false');
+    });
   }
 </script>
 </body>

@@ -1,36 +1,5 @@
 <%~ include('../layout', {
+  ...it,
   title: 'Dashboard',
-  body: `
-<div class="page-wrap">
-
-  <div class="dash-header">
-    <div>
-      <h1>Your listings</h1>
-      <p>Drafts, published, and everything in between.</p>
-    </div>
-    <a href="/items/new" class="btn btn-primary">+ New listing</a>
-  </div>
-
-  <% if (!it.items || !it.items.length) { %>
-  <div class="empty-state">
-    <p>Nothing listed yet.</p>
-    <a href="/items/new" class="btn btn-primary">Create your first listing</a>
-  </div>
-  <% } else { %>
-  <ul class="item-grid" role="list">
-    <% for (const item of it.items) { %>
-    <li>
-      <up-item-card
-        item-id="<%= item.id %>"
-        title="<%= item.title ?? 'Untitled draft' %>"
-        status="<%= item.status %>"
-        image-url="<%= item.image_url ?? '' %>"
-        price="<%= item.final_price ?? item.suggested_price ?? '' %>"
-      ></up-item-card>
-    </li>
-    <% } %>
-  </ul>
-  <% } %>
-
-</div>
-`}) %>
+  body: await includeAsync('./_dashboard-body', it)
+}) %>

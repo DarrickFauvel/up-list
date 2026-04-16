@@ -39,7 +39,24 @@ export async function aiStream(req, res) {
 
   send({ generating: true, error: null });
 
-  const { imageBase64, mimeType = 'image/jpeg', notes = '' } = req.body;
+  // Datastar sends signals as `imageMimeType`; fall back to DB image if none captured
+  let { imageBase64, imageMimeType = 'image/jpeg', notes = '' } = req.body;
+  const mimeType = imageMimeType;
+
+  if (!imageBase64) {
+    const imgRow = await db.execute({
+      sql: 'SELECT image_url FROM items WHERE id = ?',
+      args: [id],
+    });
+    const imageUrl = imgRow.rows[0]?.image_url;
+    if (typeof imageUrl === 'string' && imageUrl.startsWith('data:')) {
+      const comma = imageUrl.indexOf(',');
+      imageBase64 = imageUrl.slice(comma + 1);
+      const semi  = imageUrl.indexOf(';');
+      imageMimeType = imageUrl.slice(5, semi);
+    }
+  }
+
   const provider = process.env.AI_PROVIDER ?? 'claude';
   const draft = {};
 

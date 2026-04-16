@@ -1,0 +1,63 @@
+<div class="auth-wrap">
+  <div class="auth-card">
+
+    <a href="/" class="auth-wordmark">Up<span>List</span></a>
+
+    <div class="auth-heading">
+      <h1 class="auth-title">Create your account.</h1>
+      <p class="auth-sub">Free forever. No credit card required.</p>
+    </div>
+
+    <% if (it.error) { %>
+    <p class="error-msg" role="alert"><%= it.error %></p>
+    <% } %>
+
+    <form class="auth-form" method="post" action="/auth/register">
+
+      <div class="field">
+        <label for="name">Name <span class="optional">(optional)</span></label>
+        <input
+          type="text" id="name" name="name"
+          value="<%= it.values?.name ?? '' %>"
+          autocomplete="name"
+          placeholder="Your name"
+        >
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          type="email" id="email" name="email"
+          value="<%= it.values?.email ?? '' %>"
+          autocomplete="email" required autofocus
+          placeholder="you@example.com"
+        >
+      </div>
+
+      <div class="field">
+        <label for="password">Password <span class="optional">(min 8 chars)</span></label>
+        <input
+          type="password" id="password" name="password"
+          autocomplete="new-password" required minlength="8"
+          placeholder="••••••••"
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        Create account →
+      </button>
+    </form>
+
+    <div class="auth-divider">or</div>
+
+    <div class="oauth-buttons">
+      <a href="/auth/oauth/google" class="btn btn-outline btn-full">Continue with Google</a>
+      <a href="/auth/oauth/github" class="btn btn-outline btn-full">Continue with GitHub</a>
+    </div>
+
+    <p class="auth-switch">
+      Already have an account? <a href="/auth/login">Sign in</a>
+    </p>
+
+  </div>
+</div>

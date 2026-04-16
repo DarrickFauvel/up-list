@@ -1,20 +1,21 @@
 <%~ include('../layout', {
+  ...it,
   title: 'New listing',
   body: `
 <div class="page-wrap">
 
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+    <span class="breadcrumb-current">New listing</span>
+  </nav>
+
   <div class="page-header">
-    <a href="/dashboard" class="back-link">← Dashboard</a>
     <h1>New listing</h1>
   </div>
 
-  <form
-    class="new-item-form"
-    action="/items"
-    method="post"
-    enctype="multipart/form-data"
-  >
-    <up-camera name="image" required></up-camera>
+  <form class="new-item-form" id="new-item-form">
+    <up-camera name="image"></up-camera>
 
     <div class="field">
       <label for="notes">Notes <span class="optional">(optional)</span></label>
@@ -26,10 +27,40 @@
       ></textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary btn-full btn-lg">
+    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit">
       Continue →
     </button>
   </form>
 
 </div>
+
+<script type="module">
+  const form   = document.getElementById('new-item-form');
+  const btn    = document.getElementById('new-item-submit');
+  const camera = form.querySelector('up-camera');
+  let captured = null;
+
+  camera.addEventListener('capture', e => { captured = e.detail; });
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const body = { notes: form.querySelector('[name="notes"]').value };
+    if (captured) {
+      body.imageBase64   = captured.imageBase64;
+      body.imageMimeType = captured.mimeType;
+    }
+
+    const res = await fetch('/items', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+
+    const { redirect } = await res.json();
+    window.location.href = redirect;
+  });
+</script>
 `}) %>
