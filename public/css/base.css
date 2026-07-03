@@ -488,6 +488,47 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   margin-top: .35rem;
 }
 
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+.cat-id-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  padding: .25rem .5rem .25rem .7rem;
+  flex-shrink: 0;
+}
+.cat-id-pill-label {
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.field .cat-id-pill-input {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--ink);
+  border: none;
+  background: transparent;
+  padding: .1rem .25rem;
+  width: 4rem;
+}
+.field .cat-id-pill-input:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+  background: var(--blue-dim);
+  border-radius: var(--r-xs);
+}
+
 .category-name-display {
   font-size: 1rem;
   font-weight: 600;
@@ -498,16 +539,6 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   font-weight: 400;
   font-style: italic;
   color: var(--muted);
-}
-
-.field .category-id-input {
-  font-family: var(--mono);
-  font-size: .78rem;
-  color: var(--muted);
-  padding: .35rem .55rem;
-  max-width: 180px;
-  width: auto;
-  margin-top: .35rem;
 }
 
 .field-row {
