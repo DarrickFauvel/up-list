@@ -50,7 +50,7 @@
           <span class="nav-avatar-initials"><%= (it.user.name ?? it.user.email).charAt(0).toUpperCase() %></span>
         <% } %>
       </button>
-      <div class="nav-dropdown" id="nav-dropdown" data-show="$avatarOpen" data-on:click__outside="$avatarOpen = false">
+      <div class="nav-dropdown" id="nav-dropdown" data-show="$avatarOpen" data-on:click__outside="$avatarOpen = false" style="display:none">
         <a href="/settings" class="nav-dropdown-item">Settings</a>
         <form action="/auth/logout" method="post">
           <button type="submit" class="nav-dropdown-item nav-dropdown-item--danger">Sign out</button>
