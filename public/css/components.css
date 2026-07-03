@@ -829,6 +829,8 @@
   display: flex;
   flex-direction: column;
   gap: .6rem;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .um-icon {
@@ -859,6 +861,21 @@
   margin-top: .5rem;
 }
 .um-actions > .btn { flex: 1; }
+
+.condition-guide { margin: 0; }
+.condition-guide dt {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: .85rem;
+}
+.condition-guide dt:first-child { margin-top: 0; }
+.condition-guide dd {
+  margin: .2rem 0 0;
+  font-size: .8rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
 
 /* ── Photo grid (item edit) ──────────────────────────────── */
 .photo-manager { margin-bottom: var(--sp-4); }
