@@ -483,11 +483,6 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   border-radius: var(--r);
   padding: .55rem .85rem;
 }
-.saved-msg {
-  font-size: .85rem;
-  color: #4A8A1C;
-}
-
 /* ── Empty state ─────────────────────────────────────────── */
 .empty-state {
   display: flex;

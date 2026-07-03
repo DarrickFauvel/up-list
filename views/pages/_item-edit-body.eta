@@ -127,7 +127,6 @@
 
       <div class="action-row">
         <button type="button" class="btn btn-ghost" id="save-btn">Save draft</button>
-        <p class="saved-msg" id="saved-msg" style="display:none">Draft saved.</p>
         <up-publish-btn item-id="<%= it.item.id %>"></up-publish-btn>
         <button type="button" class="btn btn-ghost btn-danger" id="delete-btn">Delete</button>
       </div>
@@ -243,9 +242,7 @@
 
   // ── Save draft ──────────────────────────────────────────
   document.getElementById('save-btn').addEventListener('click', async () => {
-    const savedEl = document.getElementById('saved-msg');
     const saveBtn = document.getElementById('save-btn');
-    savedEl.style.display = 'none';
     saveBtn.disabled = true;
 
     await fetch(`/items/${ITEM_ID}`, {
@@ -262,9 +259,7 @@
       }),
     });
 
-    savedEl.style.display = '';
-    saveBtn.disabled = false;
-    setTimeout(() => { savedEl.style.display = 'none'; }, 3000);
+    window.location.href = '/dashboard';
   });
 
   // ── Delete draft ────────────────────────────────────────
