@@ -1,6 +1,7 @@
 <%
   const initSignals = JSON.stringify({
     generating:      false,
+    genStep:         0,
     error:           '',
     imageBase64:     '',
     imageMimeType:   'image/jpeg',
@@ -106,9 +107,11 @@
 
       <button type="button" class="btn btn-outline btn-full"
         data-attr:disabled="$generating || !$condition"
-        data-on:click="@post('/items/<%= it.item.id %>/generate')">
+        data-on:click="$genStep = 0; @post('/items/<%= it.item.id %>/generate')"
+        data-on-interval__duration.2s="$generating && ($genStep = ($genStep + 1) % 4)">
         <span data-show="!$generating">✦ Generate with AI</span>
-        <span data-show="$generating" style="display:none">Generating…</span>
+        <span data-show="$generating" style="display:none"
+          data-text="['Analyzing your photo…', 'Reading the details…', 'Writing your listing…', 'Almost there…'][$genStep]"></span>
       </button>
 
       <p class="field-hint" data-show="!$condition" <%~ it.item.condition ? 'style="display:none"' : '' %>>Select a condition above to enable generation.</p>
