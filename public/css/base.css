@@ -142,8 +142,32 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   left: 50%;
   translate: -50% -50%;
   margin: 0;
+  opacity: 0;
+  transform: scale(.95) translateY(6px);
+  transition: opacity .18s ease, transform .18s ease, overlay .18s ease allow-discrete, display .18s ease allow-discrete;
 }
-.qr-dialog::backdrop { background: rgba(0,0,0,.4); backdrop-filter: blur(3px); }
+.qr-dialog[open] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+@starting-style {
+  .qr-dialog[open] {
+    opacity: 0;
+    transform: scale(.95) translateY(6px);
+  }
+}
+.qr-dialog::backdrop {
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0);
+  transition: background-color .18s ease, backdrop-filter .18s ease, overlay .18s ease allow-discrete, display .18s ease allow-discrete;
+}
+.qr-dialog[open]::backdrop { background: rgba(0,0,0,.4); backdrop-filter: blur(3px); }
+@starting-style {
+  .qr-dialog[open]::backdrop {
+    background: rgba(0,0,0,0);
+    backdrop-filter: blur(0);
+  }
+}
 
 .qr-dialog-inner {
   padding: var(--sp-6);
@@ -221,6 +245,15 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   min-width: 160px;
   padding: .25rem;
   z-index: 200;
+  opacity: 0;
+  transform: translateY(-6px) scale(.97);
+  pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+.nav-dropdown.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 .nav-dropdown-item {
