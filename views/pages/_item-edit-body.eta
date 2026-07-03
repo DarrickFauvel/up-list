@@ -139,11 +139,14 @@
       </div>
 
       <div class="field">
-        <label for="f-category">Category ID</label>
-        <input type="text" id="f-category" name="category_id" placeholder="e.g. 11450"
+        <label for="f-category">Category</label>
+        <p class="category-name-display" data-attr:data-empty="!$category_name ? 'true' : 'false'"
+          data-text="$category_name || 'Not set yet — generate or enter an ID below'"><%= it.item.category_name || 'Not set yet — generate or enter an ID below' %></p>
+        <input type="text" id="f-category" name="category_id" placeholder="eBay category ID, e.g. 11450"
+          class="category-id-input"
           data-bind:category_id
-          data-attr:data-streaming="$generating ? 'true' : 'false'">
-        <p class="field-hint" data-show="$category_name" data-text="$category_name" <%~ it.item.category_name ? '' : 'style="display:none"' %>></p>
+          data-attr:data-streaming="$generating ? 'true' : 'false'"
+          data-on:input="$category_name = ''">
       </div>
 
       <div class="field-row">
