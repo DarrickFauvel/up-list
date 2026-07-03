@@ -488,6 +488,28 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   margin-top: .35rem;
 }
 
+.category-name-display {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+.category-name-display[data-empty="true"] {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.field .category-id-input {
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--muted);
+  padding: .35rem .55rem;
+  max-width: 180px;
+  width: auto;
+  margin-top: .35rem;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
