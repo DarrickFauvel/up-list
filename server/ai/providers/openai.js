@@ -1,15 +1,7 @@
 import OpenAI from 'openai';
+import { SYSTEM_PROMPT } from '../prompt.js';
 
 const client = new OpenAI();
-
-const SYSTEM_PROMPT = `You are an expert eBay seller. Given an image and optional notes about an item,
-produce a complete, accurate eBay listing. Respond ONLY with a JSON object containing these fields:
-- title: string (max 80 chars, eBay-optimised with keywords first)
-- description: string (HTML-safe plain text, 2-4 paragraphs)
-- item_specifics: object (key/value pairs — Brand, Color, Size, Material, etc. as relevant)
-- category_id: string (the most appropriate eBay leaf category ID as a string)
-- condition: one of NEW | LIKE_NEW | USED_GOOD | USED_FAIR | FOR_PARTS
-- suggested_price: number (USD, fair market value for a fixed-price listing)`;
 
 export async function* generate({ imageBase64, mimeType, notes }) {
   const userContent = [];
