@@ -5,25 +5,37 @@ class UpCamera extends HTMLElement {
       <div class="uc-preview" role="button" tabindex="0" aria-label="Select or capture photo">
         <span class="uc-placeholder">📷 Tap to add a photo</span>
       </div>
-      <button type="button" class="uc-btn btn btn-ghost btn-full">Choose photo / camera</button>
+      <div class="uc-actions">
+        <button type="button" class="uc-btn uc-btn-camera btn btn-ghost">📷 Take photo</button>
+        <button type="button" class="uc-btn uc-btn-library btn btn-ghost">🖼️ Choose from library</button>
+      </div>
       <input
         type="file"
         name="${this.getAttribute('name') ?? 'image'}"
         accept="image/*"
-        class="uc-input"
+        capture="environment"
+        class="uc-input uc-input-camera"
         ${this.hasAttribute('required') ? 'required' : ''}
+      >
+      <input
+        type="file"
+        accept="image/*"
+        class="uc-input uc-input-library"
       >
     `;
 
-    const input   = this.querySelector('.uc-input');
-    const trigger = () => input.click();
+    const cameraInput  = this.querySelector('.uc-input-camera');
+    const libraryInput = this.querySelector('.uc-input-library');
 
-    input.addEventListener('change', e => this.#onFile(e));
-    this.querySelector('.uc-btn').addEventListener('click', trigger);
+    cameraInput.addEventListener('change', e => this.#onFile(e));
+    libraryInput.addEventListener('change', e => this.#onFile(e));
+    this.querySelector('.uc-btn-camera').addEventListener('click', () => cameraInput.click());
+    this.querySelector('.uc-btn-library').addEventListener('click', () => libraryInput.click());
+
     const preview = this.querySelector('.uc-preview');
-    preview.addEventListener('click', trigger);
+    preview.addEventListener('click', () => libraryInput.click());
     preview.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); trigger(); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); libraryInput.click(); }
     });
   }
 
