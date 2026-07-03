@@ -46,7 +46,7 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
   if (!json) throw new Error('AI returned unparseable response');
   applyCondition(json, condition);
 
-  const fields = ['title', 'description', 'item_specifics', 'category_id', 'condition', 'suggested_price'];
+  const fields = ['title', 'description', 'item_specifics', 'category_id', 'category_name', 'condition', 'suggested_price'];
   for (const field of fields) {
     if (json[field] !== undefined) {
       yield { field, value: json[field] };

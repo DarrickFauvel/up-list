@@ -65,12 +65,12 @@ router.post('/:id/generate', aiStream);
 // ── Save draft fields ─────────────────────────────────────────────────────────
 
 router.put('/:id', async (req, res) => {
-  const { title, description, item_specifics, category_id, condition, final_price, image_url, images } = req.body;
+  const { title, description, item_specifics, category_id, condition, final_price, image_url, images, notes } = req.body;
 
   await db.execute({
     sql: `UPDATE items
           SET title=?, description=?, item_specifics=?, category_id=?,
-              condition=?, final_price=?, image_url=?, images=?, updated_at=?
+              condition=?, final_price=?, image_url=?, images=?, notes=?, updated_at=?
           WHERE id=? AND user_id=?`,
     args: [
       title, description,
@@ -79,6 +79,7 @@ router.put('/:id', async (req, res) => {
       final_price ? Number(final_price) : null,
       image_url ?? null,
       images ?? null,
+      notes ?? null,
       Date.now(),
       req.params.id, req.user.id,
     ],
