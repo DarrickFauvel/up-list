@@ -27,19 +27,17 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
 
   userContent.push({ type: 'text', text: textParts.join('\n\n') });
 
-  const stream = client.messages.stream({
+  const response = await client.messages.create({
     model:      process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
     max_tokens: 1024,
     system:     SYSTEM_PROMPT,
     messages:   [{ role: 'user', content: userContent }],
   });
 
-  let buffer = '';
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      buffer += event.delta.text;
-    }
-  }
+  const buffer = response.content
+    .filter(block => block.type === 'text')
+    .map(block => block.text)
+    .join('');
 
   // Parse the complete JSON response
   const json = extractJson(buffer);
