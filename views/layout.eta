@@ -24,7 +24,7 @@
   <!-- QR Code -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
-<body>
+<body data-signals="{qrOpen: false, avatarOpen: false}">
 
 
 <header class="site-header">
@@ -35,7 +35,7 @@
   <% if (it.user) { %>
   <nav class="site-nav">
     <a href="/dashboard" class="nav-link">Dashboard</a>
-    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code">
+    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code" data-on:click="$qrOpen = true">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
         <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
@@ -43,14 +43,14 @@
       </svg>
     </button>
     <div class="nav-avatar-wrap" id="nav-avatar-wrap">
-      <button class="nav-avatar" id="nav-avatar-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+      <button class="nav-avatar" id="nav-avatar-btn" aria-haspopup="true" data-attr:aria-expanded="$avatarOpen" aria-label="Account menu" data-on:click__stop="$avatarOpen = !$avatarOpen">
         <% if (it.user.avatarUrl) { %>
           <img src="<%= it.user.avatarUrl %>" alt="<%= it.user.name ?? it.user.email %>" class="nav-avatar-img">
         <% } else { %>
           <span class="nav-avatar-initials"><%= (it.user.name ?? it.user.email).charAt(0).toUpperCase() %></span>
         <% } %>
       </button>
-      <div class="nav-dropdown" id="nav-dropdown" hidden>
+      <div class="nav-dropdown" id="nav-dropdown" data-show="$avatarOpen" data-on:click__outside="$avatarOpen = false">
         <a href="/settings" class="nav-dropdown-item">Settings</a>
         <form action="/auth/logout" method="post">
           <button type="submit" class="nav-dropdown-item nav-dropdown-item--danger">Sign out</button>
@@ -60,7 +60,7 @@
   </nav>
   <% } else { %>
   <nav class="site-nav">
-    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code">
+    <button class="nav-icon-btn" id="qr-btn" aria-label="Show QR code for this page" title="QR code" data-on:click="$qrOpen = true">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
         <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
@@ -85,14 +85,19 @@
 <up-toast></up-toast>
 
 <!-- QR code modal -->
-<dialog id="qr-dialog" class="qr-dialog">
+<dialog id="qr-dialog" class="qr-dialog"
+  data-effect="$qrOpen ? el.showModal() : el.close()"
+  data-on:click="evt.target === el && ($qrOpen = false)"
+  data-on:close="$qrOpen = false">
   <div class="qr-dialog-inner">
     <div class="qr-dialog-header">
       <span class="qr-dialog-title">QR Code</span>
-      <button class="qr-close-btn" id="qr-close" aria-label="Close">✕</button>
+      <button class="qr-close-btn" id="qr-close" aria-label="Close" data-on:click="$qrOpen = false">✕</button>
     </div>
-    <div id="qr-container"></div>
-    <p class="qr-url" id="qr-url"></p>
+    <div id="qr-container" data-ref="qrContainer"
+      data-effect="$qrOpen && (qrContainer.innerHTML = '', new QRCode(qrContainer, { text: window.location.href, width: 220, height: 220, colorDark: '#191919', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }))">
+    </div>
+    <p class="qr-url" data-text="window.location.href"></p>
   </div>
 </dialog>
 
@@ -100,49 +105,6 @@
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
-  }
-
-  // QR code modal
-  const qrBtn       = document.getElementById('qr-btn');
-  const qrDialog    = document.getElementById('qr-dialog');
-  const qrClose     = document.getElementById('qr-close');
-  const qrContainer = document.getElementById('qr-container');
-  const qrUrlEl     = document.getElementById('qr-url');
-  let   qrInstance  = null;
-
-  qrBtn.addEventListener('click', () => {
-    const url = window.location.href;
-    qrUrlEl.textContent = url;
-    qrContainer.innerHTML = '';
-    qrInstance = new QRCode(qrContainer, {
-      text: url,
-      width: 220,
-      height: 220,
-      colorDark: '#191919',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
-    });
-    qrDialog.showModal();
-  });
-
-  qrClose.addEventListener('click', () => qrDialog.close());
-  qrDialog.addEventListener('click', e => { if (e.target === qrDialog) qrDialog.close(); });
-
-  // Avatar dropdown
-  const avatarWrap = document.getElementById('nav-avatar-wrap');
-  const avatarBtn  = document.getElementById('nav-avatar-btn');
-  const navDropdown = document.getElementById('nav-dropdown');
-  if (avatarBtn && navDropdown) {
-    avatarBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = !navDropdown.hidden;
-      navDropdown.hidden = open;
-      avatarBtn.setAttribute('aria-expanded', String(!open));
-    });
-    document.addEventListener('click', () => {
-      navDropdown.hidden = true;
-      avatarBtn.setAttribute('aria-expanded', 'false');
-    });
   }
 </script>
 </body>

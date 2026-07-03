@@ -2,7 +2,7 @@
   ...it,
   title: 'New listing',
   body: `
-<div class="page-wrap">
+<div class="page-wrap" data-signals="{notes: '', imageBase64: '', imageMimeType: '', saving: false}">
 
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
@@ -14,8 +14,9 @@
     <h1>New listing</h1>
   </div>
 
-  <form class="new-item-form" id="new-item-form">
-    <up-camera name="image"></up-camera>
+  <form class="new-item-form" id="new-item-form"
+    data-on:submit__prevent="$saving = true; fetch('/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: $notes, imageBase64: $imageBase64, imageMimeType: $imageMimeType }) }).then(r => r.json()).then(d => window.location.href = d.redirect)">
+    <up-camera name="image" data-on:capture="$imageBase64 = evt.detail.imageBase64; $imageMimeType = evt.detail.mimeType"></up-camera>
 
     <div class="field">
       <label for="notes">Notes <span class="optional">(optional)</span></label>
@@ -24,43 +25,15 @@
         name="notes"
         rows="3"
         placeholder="Brand, size, condition — anything useful for the AI…"
+        data-bind:notes
       ></textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit">
-      Continue →
+    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit" data-attr:disabled="$saving">
+      <span data-show="!$saving">Continue →</span>
+      <span data-show="$saving" style="display:none">Saving…</span>
     </button>
   </form>
 
 </div>
-
-<script type="module">
-  const form   = document.getElementById('new-item-form');
-  const btn    = document.getElementById('new-item-submit');
-  const camera = form.querySelector('up-camera');
-  let captured = null;
-
-  camera.addEventListener('capture', e => { captured = e.detail; });
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    const body = { notes: form.querySelector('[name="notes"]').value };
-    if (captured) {
-      body.imageBase64   = captured.imageBase64;
-      body.imageMimeType = captured.mimeType;
-    }
-
-    const res = await fetch('/items', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-    });
-
-    const { redirect } = await res.json();
-    window.location.href = redirect;
-  });
-</script>
 `}) %>
