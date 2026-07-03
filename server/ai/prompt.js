@@ -1,3 +1,11 @@
+export const CONDITION_LABELS = {
+  NEW:        'New',
+  LIKE_NEW:   'Like New',
+  USED_GOOD:  'Used – Good',
+  USED_FAIR:  'Used – Fair',
+  FOR_PARTS:  'For Parts',
+};
+
 export const SYSTEM_PROMPT = `You are an expert eBay seller. Given an image and optional notes about an item,
 produce a complete, accurate eBay listing. Respond ONLY with a JSON object containing these fields:
 - title: string (max 80 characters. Follow eBay's optimal search-ranking title pattern, front-loaded with

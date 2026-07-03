@@ -40,7 +40,7 @@ export async function aiStream(req, res) {
   send({ generating: true, error: null });
 
   // Datastar sends signals as `imageMimeType`; fall back to DB image if none captured
-  let { imageBase64, imageMimeType = 'image/jpeg', notes = '' } = req.body;
+  let { imageBase64, imageMimeType = 'image/jpeg', notes = '', condition = '' } = req.body;
   const mimeType = imageMimeType;
 
   if (!imageBase64) {
@@ -61,7 +61,7 @@ export async function aiStream(req, res) {
   const draft = {};
 
   try {
-    for await (const update of generateListing({ imageBase64, mimeType, notes, provider })) {
+    for await (const update of generateListing({ imageBase64, mimeType, notes, condition, provider })) {
       draft[update.field] = update.value;
       send({ [update.field]: update.value });
     }
