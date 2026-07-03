@@ -95,7 +95,7 @@
       <button class="qr-close-btn" id="qr-close" aria-label="Close" data-on:click="$qrOpen = false">✕</button>
     </div>
     <div id="qr-container" data-ref="qrContainer"
-      data-effect="$qrOpen && (qrContainer.innerHTML = '', new QRCode(qrContainer, { text: window.location.href, width: 220, height: 220, colorDark: '#191919', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }))">
+      data-effect="$qrOpen && ($qrContainer.innerHTML = '', new QRCode($qrContainer, { text: window.location.href, width: 220, height: 220, colorDark: '#191919', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }))">
     </div>
     <p class="qr-url" data-text="window.location.href"></p>
   </div>
