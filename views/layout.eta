@@ -14,8 +14,8 @@
 
   <%~ it.head ?? '' %>
 
-  <!-- Datastar -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@starfederation/datastar@latest/dist/datastar.js"></script>
+  <!-- Datastar (pinned to v1.0.2 stable; the npm publish is stuck on 1.0.0-beta.11, so pull the release bundle from GitHub instead) -->
+  <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.2/bundles/datastar.js"></script>
 
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">

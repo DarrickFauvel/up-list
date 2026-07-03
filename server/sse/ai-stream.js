@@ -5,10 +5,10 @@ import { generateListing } from '../ai/adapter.js';
  * POST /items/:id/generate
  *
  * Expects JSON body: { imageBase64, mimeType, notes }
- * Responds with an SSE stream of Datastar merge-signals events.
+ * Responds with an SSE stream of Datastar patch-signals events (v1.0.2 protocol).
  *
- * Datastar merge-signals event format:
- *   event: datastar-merge-signals
+ * Datastar patch-signals event format:
+ *   event: datastar-patch-signals
  *   data: signals <JSON>
  *
  * (blank line terminates the event)
@@ -33,7 +33,7 @@ export async function aiStream(req, res) {
   res.flushHeaders();
 
   const send = (signals) => {
-    res.write(`event: datastar-merge-signals\n`);
+    res.write(`event: datastar-patch-signals\n`);
     res.write(`data: signals ${JSON.stringify(signals)}\n\n`);
   };
 
