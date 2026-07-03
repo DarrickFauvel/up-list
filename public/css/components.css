@@ -681,7 +681,13 @@
   display: block;
 }
 .uc-placeholder { color: var(--muted); font-size: .95rem; text-align: center; padding: var(--sp-4); }
-.uc-btn  { margin-top: var(--sp-2); }
+
+.uc-actions {
+  display: flex;
+  gap: .5rem;
+  margin-top: var(--sp-2);
+}
+.uc-btn { flex: 1; }
 .uc-input { display: none; }
 
 /* ── up-draft-field ──────────────────────────────────────── */
