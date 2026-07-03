@@ -480,6 +480,43 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
 }
 .field textarea { resize: vertical; min-height: 80px; }
 
+.field-input-wrap { position: relative; }
+
+.field-input-wrap input,
+.field-input-wrap textarea {
+  padding-right: 2.5rem;
+}
+
+.field-copy-btn {
+  position: absolute;
+  right: .5rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r);
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--muted);
+  padding: 0;
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.field-copy-btn:hover {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: var(--blue-dim);
+}
+
+.field-input-wrap--input .field-copy-btn {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.field-input-wrap--textarea .field-copy-btn {
+  top: .5rem;
+}
+
 .optional { font-weight: 400; opacity: .55; }
 
 .field-hint {
