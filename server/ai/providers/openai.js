@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { SYSTEM_PROMPT, CONDITION_LABELS } from '../prompt.js';
+import { SYSTEM_PROMPT, CONDITION_LABELS, applyCondition } from '../prompt.js';
 
 const client = new OpenAI();
 
@@ -34,7 +34,7 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
   });
 
   const json = JSON.parse(response.choices[0].message.content);
-  if (condition) json.condition = condition; // seller's own choice always wins over the model's guess
+  applyCondition(json, condition);
 
   const fields = ['title', 'description', 'item_specifics', 'category_id', 'condition', 'suggested_price'];
   for (const field of fields) {

@@ -6,6 +6,24 @@ export const CONDITION_LABELS = {
   FOR_PARTS:  'For Parts',
 };
 
+const TITLE_MAX_LENGTH = 80;
+
+// Forces the seller's chosen condition onto the AI's draft rather than trusting
+// the model to comply with the prompt — the model only treats "condition
+// qualifier" as an optional title component, so it can't be relied on to
+// mention it every time.
+export function applyCondition(json, condition) {
+  if (!condition || !json) return json;
+  json.condition = condition;
+
+  const label = CONDITION_LABELS[condition] ?? condition;
+  if (json.title && !json.title.toLowerCase().includes(label.toLowerCase())) {
+    const withCondition = `${json.title} ${label}`;
+    if (withCondition.length <= TITLE_MAX_LENGTH) json.title = withCondition;
+  }
+  return json;
+}
+
 export const SYSTEM_PROMPT = `You are an expert eBay seller. Given an image and optional notes about an item,
 produce a complete, accurate eBay listing. Respond ONLY with a JSON object containing these fields:
 - title: string (max 80 characters. Follow eBay's optimal search-ranking title pattern, front-loaded with

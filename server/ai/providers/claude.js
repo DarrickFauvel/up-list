@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM_PROMPT, CONDITION_LABELS } from '../prompt.js';
+import { SYSTEM_PROMPT, CONDITION_LABELS, applyCondition } from '../prompt.js';
 
 const client = new Anthropic();
 
@@ -44,7 +44,7 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
   // Parse the complete JSON response
   const json = extractJson(buffer);
   if (!json) throw new Error('AI returned unparseable response');
-  if (condition) json.condition = condition; // seller's own choice always wins over the model's guess
+  applyCondition(json, condition);
 
   const fields = ['title', 'description', 'item_specifics', 'category_id', 'condition', 'suggested_price'];
   for (const field of fields) {
