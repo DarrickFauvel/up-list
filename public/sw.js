@@ -2,17 +2,23 @@
  * UpList Service Worker
  *
  * Cache strategy:
- *   App shell (HTML, CSS, JS)  → Cache-first, versioned
- *   API GET requests           → Network-first, fallback to cache
- *   Images                     → Cache-first
- *   SSE / POST / publish       → Network-only
+ *   App shell (HTML, CSS, JS)     → Cache-first, versioned
+ *   Dashboard & item pages        → Network-first, fallback to cache
+ *   Other API GET requests        → Network-first, fallback to cache
+ *   Images                        → Cache-first
+ *   SSE / POST / publish / logout → Network-only
+ *
+ * Dashboard/item pages are cached opportunistically as the user visits
+ * them, so they stay available offline. Since they're authenticated,
+ * per-user content, cached copies are cleared on logout so a later
+ * user on the same device/browser can't see stale content.
  *
  * Background Sync:
  *   Offline drafts created in IndexedDB are synced via the
  *   'up-list-sync' BackgroundSync tag → POST /sync/batch
  */
 
-const CACHE_NAME    = 'uplist-v10';
+const CACHE_NAME    = 'uplist-v11';
 const SHELL_ASSETS  = [
   '/',
   '/css/reset.css',
@@ -54,8 +60,17 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Clear cached dashboard/item pages on logout so a later user on the same
+  // device/browser can't see stale, previously-authenticated content.
+  if (request.method === 'POST' && url.pathname === '/auth/logout') {
+    event.waitUntil(clearUserPageCache());
+    return; // let the logout request itself go straight to network
+  }
+
   // Network-only: non-GET, SSE, mutations, external, or auth-protected pages
-  const protectedPages = ['/dashboard', '/items', '/settings', '/ebay', '/sync'];
+  // that we deliberately never cache (settings/eBay involve tokens; sync is
+  // its own offline queue). Dashboard and item pages ARE cached — see below.
+  const protectedPages = ['/settings', '/ebay', '/sync'];
   if (
     request.method !== 'GET' ||
     url.pathname.includes('/generate') ||
@@ -105,6 +120,19 @@ async function networkFirst(request) {
     const cached = await caches.match(request);
     return cached ?? new Response('Offline', { status: 503 });
   }
+}
+
+async function clearUserPageCache() {
+  const cache = await caches.open(CACHE_NAME);
+  const keys = await cache.keys();
+  await Promise.all(
+    keys
+      .filter(req => {
+        const p = new URL(req.url).pathname;
+        return p === '/dashboard' || p.startsWith('/items');
+      })
+      .map(req => cache.delete(req))
+  );
 }
 
 // ── Background Sync ───────────────────────────────────────────────────────────
