@@ -69,7 +69,7 @@ export async function aiStream(req, res) {
     // Persist completed draft
     await db.execute({
       sql: `UPDATE items
-            SET title=?, description=?, item_specifics=?, category_id=?,
+            SET title=?, description=?, item_specifics=?, category_id=?, category_name=?,
                 condition=?, suggested_price=?, ai_provider=?, updated_at=?
             WHERE id=?`,
       args: [
@@ -77,6 +77,7 @@ export async function aiStream(req, res) {
         draft.description ?? null,
         draft.item_specifics ? JSON.stringify(draft.item_specifics) : null,
         draft.category_id ?? null,
+        draft.category_name ?? null,
         draft.condition ?? null,
         draft.suggested_price ?? null,
         provider,
