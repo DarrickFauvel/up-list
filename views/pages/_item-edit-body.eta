@@ -99,7 +99,11 @@
             data-attr:data-streaming="$generating ? 'true' : 'false'">
         </div>
         <div class="field">
-          <label for="f-condition">Condition</label>
+          <div class="field-label-row">
+            <label for="f-condition">Condition</label>
+            <button type="button" class="field-info-btn" aria-label="What do these conditions mean?"
+              data-on:click="document.getElementById('condition-info-modal').open()">i</button>
+          </div>
           <select id="f-condition" name="condition"
             data-bind:condition
             data-attr:data-streaming="$generating ? 'true' : 'false'">
@@ -110,6 +114,30 @@
           </select>
         </div>
       </div>
+
+      <up-modal id="condition-info-modal">
+        <div class="um-title">Item condition guide</div>
+        <p class="um-body">eBay's standard definitions for each condition, so your listing sets the right expectations.</p>
+        <dl class="condition-guide">
+          <dt>New</dt>
+          <dd>A brand-new, unused, unopened, undamaged item in its original packaging (where packaging is applicable). Packaging should be the same as what is found in a retail store, unless the item was packaged by the manufacturer in non-retail packaging.</dd>
+
+          <dt>Like New</dt>
+          <dd>An item in excellent, new condition with no signs of wear or use. The original packaging may be missing or opened, and original accessories may be incomplete, but the item itself is like-new.</dd>
+
+          <dt>Used – Good</dt>
+          <dd>An item that has been used previously. May have minor cosmetic wear but is fully operational and functions as intended.</dd>
+
+          <dt>Used – Fair</dt>
+          <dd>An item with visible wear from consistent use, but still fully functional. May have noticeable scratches, dents, or blemishes, and could be missing minor non-essential parts.</dd>
+
+          <dt>For Parts</dt>
+          <dd>An item that does not function as intended and is not fully operational. Being sold for parts or repair, and may have cosmetic and/or functional defects.</dd>
+        </dl>
+        <div class="um-actions">
+          <button class="btn btn-primary btn-full" data-action="close">Got it</button>
+        </div>
+      </up-modal>
 
       <div class="field-row">
         <div class="field">

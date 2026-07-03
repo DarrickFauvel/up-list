@@ -432,6 +432,32 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   letter-spacing: 0;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+.field-info-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: var(--bg-2);
+  color: var(--muted);
+  font-size: .65rem;
+  font-style: italic;
+  font-family: Georgia, serif;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color .15s, border-color .15s;
+}
+.field-info-btn:hover { color: var(--blue); border-color: var(--blue); }
+
 .field input,
 .field textarea,
 .field select {
