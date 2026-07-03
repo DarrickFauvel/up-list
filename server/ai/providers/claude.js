@@ -1,9 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM_PROMPT } from '../prompt.js';
+import { SYSTEM_PROMPT, CONDITION_LABELS } from '../prompt.js';
 
 const client = new Anthropic();
 
-export async function* generate({ imageBase64, mimeType, notes }) {
+export async function* generate({ imageBase64, mimeType, notes, condition }) {
   const userContent = [];
 
   if (imageBase64) {
@@ -17,12 +17,15 @@ export async function* generate({ imageBase64, mimeType, notes }) {
     });
   }
 
-  userContent.push({
-    type: 'text',
-    text: notes
-      ? `Additional notes from the seller: ${notes}`
-      : 'Please analyse the item in the image and produce a listing.',
-  });
+  const textParts = [];
+  if (condition) {
+    textParts.push(`The seller has already specified the item's condition as "${CONDITION_LABELS[condition] ?? condition}". Use this exact condition in your response, and write the title, description, and price to match it — do not infer a different condition.`);
+  }
+  textParts.push(notes
+    ? `Additional notes from the seller: ${notes}`
+    : 'Please analyse the item in the image and produce a listing.');
+
+  userContent.push({ type: 'text', text: textParts.join('\n\n') });
 
   const stream = client.messages.stream({
     model:      process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
@@ -41,6 +44,7 @@ export async function* generate({ imageBase64, mimeType, notes }) {
   // Parse the complete JSON response
   const json = extractJson(buffer);
   if (!json) throw new Error('AI returned unparseable response');
+  if (condition) json.condition = condition; // seller's own choice always wins over the model's guess
 
   const fields = ['title', 'description', 'item_specifics', 'category_id', 'condition', 'suggested_price'];
   for (const field of fields) {

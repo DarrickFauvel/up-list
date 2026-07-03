@@ -62,57 +62,21 @@
         <textarea id="notes" rows="2" placeholder="Extra details for the AI…" data-bind:notes><%= it.item.notes ?? '' %></textarea>
       </div>
 
-      <button type="button" class="btn btn-outline btn-full"
-        data-attr:disabled="$generating"
-        data-on:click="@post('/items/<%= it.item.id %>/generate')">
-        <span data-show="!$generating">✦ Generate with AI</span>
-        <span data-show="$generating" style="display:none">Generating…</span>
-      </button>
-
-      <p class="error-msg" data-show="$error" data-text="$error" style="display:none"></p>
-
-    </aside>
-
-    <!-- ── Main fields ───────────────────────────────────── -->
-    <section class="edit-main">
-
       <div class="field">
-        <label for="f-title">Title</label>
-        <input type="text" id="f-title" name="title" maxlength="80"
-          data-bind:title
+        <div class="field-label-row">
+          <label for="f-condition">Condition</label>
+          <button type="button" class="field-info-btn" aria-label="What do these conditions mean?"
+            data-on:click="document.getElementById('condition-info-modal').open()">i</button>
+        </div>
+        <select id="f-condition" name="condition"
+          data-bind:condition
           data-attr:data-streaming="$generating ? 'true' : 'false'">
-        <p class="field-hint">Pattern: Brand + Product Type + Attributes (Size, Color, Material) + Condition</p>
-      </div>
-
-      <div class="field">
-        <label for="f-description">Description</label>
-        <textarea id="f-description" name="description" rows="6"
-          data-bind:description
-          data-attr:data-streaming="$generating ? 'true' : 'false'"></textarea>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="f-category">Category ID</label>
-          <input type="text" id="f-category" name="category_id" placeholder="e.g. 11450"
-            data-bind:category_id
-            data-attr:data-streaming="$generating ? 'true' : 'false'">
-        </div>
-        <div class="field">
-          <div class="field-label-row">
-            <label for="f-condition">Condition</label>
-            <button type="button" class="field-info-btn" aria-label="What do these conditions mean?"
-              data-on:click="document.getElementById('condition-info-modal').open()">i</button>
-          </div>
-          <select id="f-condition" name="condition"
-            data-bind:condition
-            data-attr:data-streaming="$generating ? 'true' : 'false'">
-            <option value="">— select —</option>
-            <% for (const opt of [['NEW','New'],['LIKE_NEW','Like New'],['USED_GOOD','Used – Good'],['USED_FAIR','Used – Fair'],['FOR_PARTS','For Parts']]) { %>
-            <option value="<%= opt[0] %>"><%= opt[1] %></option>
-            <% } %>
-          </select>
-        </div>
+          <option value="">— select —</option>
+          <% for (const opt of [['NEW','New'],['LIKE_NEW','Like New'],['USED_GOOD','Used – Good'],['USED_FAIR','Used – Fair'],['FOR_PARTS','For Parts']]) { %>
+          <option value="<%= opt[0] %>"><%= opt[1] %></option>
+          <% } %>
+        </select>
+        <p class="field-hint">Pick the condition first — the AI uses it to write an accurate title, description, and price.</p>
       </div>
 
       <up-modal id="condition-info-modal">
@@ -138,6 +102,44 @@
           <button class="btn btn-primary btn-full" data-action="close">Got it</button>
         </div>
       </up-modal>
+
+      <button type="button" class="btn btn-outline btn-full"
+        data-attr:disabled="$generating || !$condition"
+        data-on:click="@post('/items/<%= it.item.id %>/generate')">
+        <span data-show="!$generating">✦ Generate with AI</span>
+        <span data-show="$generating" style="display:none">Generating…</span>
+      </button>
+
+      <p class="field-hint" data-show="!$condition" <%~ it.item.condition ? 'style="display:none"' : '' %>>Select a condition above to enable generation.</p>
+
+      <p class="error-msg" data-show="$error" data-text="$error" style="display:none"></p>
+
+    </aside>
+
+    <!-- ── Main fields ───────────────────────────────────── -->
+    <section class="edit-main">
+
+      <div class="field">
+        <label for="f-title">Title</label>
+        <input type="text" id="f-title" name="title" maxlength="80"
+          data-bind:title
+          data-attr:data-streaming="$generating ? 'true' : 'false'">
+        <p class="field-hint">Pattern: Brand + Product Type + Attributes (Size, Color, Material) + Condition</p>
+      </div>
+
+      <div class="field">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" rows="6"
+          data-bind:description
+          data-attr:data-streaming="$generating ? 'true' : 'false'"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="f-category">Category ID</label>
+        <input type="text" id="f-category" name="category_id" placeholder="e.g. 11450"
+          data-bind:category_id
+          data-attr:data-streaming="$generating ? 'true' : 'false'">
+      </div>
 
       <div class="field-row">
         <div class="field">
