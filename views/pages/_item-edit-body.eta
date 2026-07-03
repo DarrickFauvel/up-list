@@ -81,6 +81,7 @@
         <input type="text" id="f-title" name="title" maxlength="80"
           data-bind:title
           data-attr:data-streaming="$generating ? 'true' : 'false'">
+        <p class="field-hint">Pattern: Brand + Product Type + Attributes (Size, Color, Material) + Condition</p>
       </div>
 
       <div class="field">
