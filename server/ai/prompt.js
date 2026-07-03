@@ -18,8 +18,13 @@ export function applyCondition(json, condition) {
 
   const label = CONDITION_LABELS[condition] ?? condition;
   if (json.title && !json.title.toLowerCase().includes(label.toLowerCase())) {
-    const withCondition = `${json.title} ${label}`;
-    if (withCondition.length <= TITLE_MAX_LENGTH) json.title = withCondition;
+    // Truncate the model's title if needed rather than silently skipping the
+    // condition when it doesn't fit — a stray unrelated "New" elsewhere in
+    // the title (e.g. a "New Balance" brand name) must never be mistaken
+    // for the seller's actual chosen condition.
+    const suffix    = ` ${label}`;
+    const available = Math.max(0, TITLE_MAX_LENGTH - suffix.length);
+    json.title = `${json.title.slice(0, available).trimEnd()}${suffix}`.trim();
   }
   return json;
 }
