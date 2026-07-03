@@ -141,6 +141,8 @@
       <div class="field">
         <label for="f-category">Category</label>
         <div class="category-row">
+          <p class="category-name-display" data-attr:data-empty="!$category_name ? 'true' : 'false'"
+            data-text="$category_name || 'Not set yet — generate or enter an ID above'"><%= it.item.category_name || 'Not set yet — generate or enter an ID above' %></p>
           <div class="cat-id-pill">
             <span class="cat-id-pill-label">cat_id:</span>
             <input type="text" id="f-category" name="category_id" placeholder="—"
@@ -149,8 +151,6 @@
               data-attr:data-streaming="$generating ? 'true' : 'false'"
               data-on:input="$category_name = ''">
           </div>
-          <p class="category-name-display" data-attr:data-empty="!$category_name ? 'true' : 'false'"
-            data-text="$category_name || 'Not set yet — generate or enter an ID above'"><%= it.item.category_name || 'Not set yet — generate or enter an ID above' %></p>
         </div>
       </div>
 
@@ -261,7 +261,7 @@
     const files = Array.from(input.files ?? []);
     const slots = MAX_PHOTOS - photos.length;
     for (const file of files.slice(0, slots)) {
-      const dataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await resizeImage(file);
       const comma = dataUrl.indexOf(',');
       const semi  = dataUrl.indexOf(';');
       photos.push({ dataUrl, base64: dataUrl.slice(comma + 1), mimeType: dataUrl.slice(5, semi) });
@@ -273,12 +273,31 @@
   fileInput.addEventListener('change', () => addPhotosFromInput(fileInput));
   cameraInput.addEventListener('change', () => addPhotosFromInput(cameraInput));
 
-  function readFileAsDataUrl(file) {
+  const PHOTO_MAX_DIM = 1600;
+  const PHOTO_QUALITY  = 0.8;
+
+  function resizeImage(file, maxDim = PHOTO_MAX_DIM, quality = PHOTO_QUALITY) {
+    const objectUrl = URL.createObjectURL(file);
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not load image'));
+      };
+      img.src = objectUrl;
     });
   }
 
