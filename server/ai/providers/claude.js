@@ -33,7 +33,7 @@ export async function* generate({ imageBase64, mimeType, notes }) {
   });
 
   const stream = client.messages.stream({
-    model:      'claude-opus-4-6',
+    model:      process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
     max_tokens: 1024,
     system:     SYSTEM_PROMPT,
     messages:   [{ role: 'user', content: userContent }],
