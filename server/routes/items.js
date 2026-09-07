@@ -23,18 +23,28 @@ router.get('/new', (req, res) => res.render('pages/item-new'));
 // ── Create draft ──────────────────────────────────────────────────────────────
 
 router.post('/', async (req, res) => {
-  const { imageBase64, imageMimeType, notes } = req.body ?? {};
+  const { images, notes } = req.body ?? {};
   const id  = nanoid();
   const now = Date.now();
 
-  const imageUrl = imageBase64
-    ? `data:${imageMimeType ?? 'image/jpeg'};base64,${imageBase64}`
-    : null;
+  let imageUrl = null;
+  let imagesJson = null;
+
+  if (images) {
+    let parsed;
+    try { parsed = JSON.parse(images); } catch { parsed = null; }
+    if (!Array.isArray(parsed)) return res.status(400).json({ error: 'Invalid images payload' });
+    if (parsed.length > 20) return res.status(400).json({ error: 'Maximum 20 photos allowed' });
+    if (parsed.length) {
+      imageUrl = parsed[0];
+      imagesJson = JSON.stringify(parsed);
+    }
+  }
 
   await db.execute({
-    sql: `INSERT INTO items (id, user_id, status, image_url, notes, created_at, updated_at)
-          VALUES (?, ?, 'draft', ?, ?, ?, ?)`,
-    args: [id, req.user.id, imageUrl, notes || null, now, now],
+    sql: `INSERT INTO items (id, user_id, status, image_url, images, notes, created_at, updated_at)
+          VALUES (?, ?, 'draft', ?, ?, ?, ?, ?)`,
+    args: [id, req.user.id, imageUrl, imagesJson, notes || null, now, now],
   });
 
   const redirect = `/items/${id}`;
@@ -66,6 +76,14 @@ router.post('/:id/generate', aiStream);
 
 router.put('/:id', async (req, res) => {
   const { title, description, item_specifics, category_id, condition, final_price, image_url, images, notes } = req.body;
+
+  if (images) {
+    let parsed;
+    try { parsed = JSON.parse(images); } catch { parsed = null; }
+    if (!Array.isArray(parsed) || parsed.length > 20) {
+      return res.status(400).json({ error: 'Maximum 20 photos allowed' });
+    }
+  }
 
   await db.execute({
     sql: `UPDATE items

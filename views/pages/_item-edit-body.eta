@@ -34,7 +34,7 @@
     <!-- ── Sidebar ───────────────────────────────────────── -->
     <aside class="edit-sidebar">
 
-      <!-- Multi-photo grid (eBay allows up to 12) -->
+      <!-- Multi-photo grid (max 20 photos) -->
       <div class="photo-manager" id="photo-manager">
         <div class="photo-grid" id="photo-grid">
           <!-- Thumbnails injected by JS -->
@@ -51,9 +51,10 @@
             Add photo
           </button>
         </div>
-        <input type="file" accept="image/*" capture="environment" id="photo-camera-input" style="display:none">
         <input type="file" accept="image/*" id="photo-file-input" style="display:none" multiple>
       </div>
+
+      <up-camera-session id="camera-session"></up-camera-session>
 
       <!-- Hidden signal inputs so Datastar carries primary photo to generate -->
       <input type="text" id="sig-imageBase64" data-bind:imageBase64 style="display:none" aria-hidden="true" tabindex="-1">
@@ -198,9 +199,12 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import { createPhotoManager } from '/js/photo-manager.js';
+  import { dataUrlToParts } from '/js/image-utils.js';
+
   const ITEM_ID    = '<%= it.item.id %>';
-  const MAX_PHOTOS = 12;
+  const MAX_PHOTOS = 20;
 
   // ── Photo manager ────────────────────────────────────────
   // Load existing photos from DB (images column = JSON array, or fall back to image_url)
@@ -216,38 +220,9 @@
   } catch (e) {}
 
   // photos = [{ dataUrl, base64, mimeType }, ...]
-  let photos = initImages.map(dataUrl => {
-    const comma = dataUrl.indexOf(',');
-    const semi  = dataUrl.indexOf(';');
-    return { dataUrl, base64: dataUrl.slice(comma + 1), mimeType: dataUrl.slice(5, semi) };
-  });
+  const initialPhotos = initImages.map(dataUrl => ({ dataUrl, ...dataUrlToParts(dataUrl) }));
 
-  function renderPhotos() {
-    const grid      = document.getElementById('photo-grid');
-    const cameraBtn = document.getElementById('photo-camera-btn');
-    const addBtn    = document.getElementById('photo-add-btn');
-    grid.innerHTML = '';
-
-    photos.forEach((photo, i) => {
-      const thumb = document.createElement('div');
-      thumb.className = 'photo-thumb' + (i === 0 ? ' photo-thumb--primary' : '');
-      thumb.innerHTML = `
-        <img src="${photo.dataUrl}" alt="Photo ${i + 1}">
-        <button type="button" class="photo-thumb-remove" data-index="${i}" aria-label="Remove photo">&times;</button>
-        ${i === 0 ? '<span class="photo-thumb-label">Primary</span>' : ''}
-      `;
-      grid.appendChild(thumb);
-    });
-
-    if (photos.length < MAX_PHOTOS) {
-      grid.appendChild(cameraBtn);
-      grid.appendChild(addBtn);
-    }
-
-    updatePrimarySignal();
-  }
-
-  function updatePrimarySignal() {
+  function updatePrimarySignal(photos) {
     const b64Input  = document.getElementById('sig-imageBase64');
     const mimeInput = document.getElementById('sig-imageMimeType');
     const primary   = photos[0];
@@ -261,65 +236,17 @@
     }
   }
 
-  // Remove photo
-  document.getElementById('photo-grid').addEventListener('click', e => {
-    const btn = e.target.closest('.photo-thumb-remove');
-    if (!btn) return;
-    photos.splice(Number(btn.dataset.index), 1);
-    renderPhotos();
+  const photoManager = createPhotoManager({
+    gridEl:        document.getElementById('photo-grid'),
+    cameraBtn:     document.getElementById('photo-camera-btn'),
+    addBtn:        document.getElementById('photo-add-btn'),
+    fileInput:     document.getElementById('photo-file-input'),
+    cameraSession: document.getElementById('camera-session'),
+    maxPhotos:     MAX_PHOTOS,
+    initialPhotos,
+    showPrimaryLabel: true,
+    onChange: updatePrimarySignal,
   });
-
-  // Add photos via file input (library) or camera capture
-  const fileInput   = document.getElementById('photo-file-input');
-  const cameraInput = document.getElementById('photo-camera-input');
-  document.getElementById('photo-add-btn').addEventListener('click', () => fileInput.click());
-  document.getElementById('photo-camera-btn').addEventListener('click', () => cameraInput.click());
-
-  async function addPhotosFromInput(input) {
-    const files = Array.from(input.files ?? []);
-    const slots = MAX_PHOTOS - photos.length;
-    for (const file of files.slice(0, slots)) {
-      const dataUrl = await resizeImage(file);
-      const comma = dataUrl.indexOf(',');
-      const semi  = dataUrl.indexOf(';');
-      photos.push({ dataUrl, base64: dataUrl.slice(comma + 1), mimeType: dataUrl.slice(5, semi) });
-    }
-    input.value = '';
-    renderPhotos();
-  }
-
-  fileInput.addEventListener('change', () => addPhotosFromInput(fileInput));
-  cameraInput.addEventListener('change', () => addPhotosFromInput(cameraInput));
-
-  const PHOTO_MAX_DIM = 1600;
-  const PHOTO_QUALITY  = 0.8;
-
-  function resizeImage(file, maxDim = PHOTO_MAX_DIM, quality = PHOTO_QUALITY) {
-    const objectUrl = URL.createObjectURL(file);
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-
-        const canvas = document.createElement('canvas');
-        canvas.width  = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-        URL.revokeObjectURL(objectUrl);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error('Could not load image'));
-      };
-      img.src = objectUrl;
-    });
-  }
-
-  renderPhotos();
 
   // ── Copy to clipboard ────────────────────────────────────
   async function copyField(targetId, label) {
@@ -357,8 +284,8 @@
         category_id: document.getElementById('f-category').value,
         condition:   document.getElementById('f-condition').value,
         final_price: document.getElementById('f-price').value,
-        image_url:   photos[0]?.dataUrl ?? null,
-        images:      JSON.stringify(photos.map(p => p.dataUrl)),
+        image_url:   photoManager.getPhotos()[0]?.dataUrl ?? null,
+        images:      JSON.stringify(photoManager.getPhotos().map(p => p.dataUrl)),
         notes:       document.getElementById('notes').value,
       }),
     });

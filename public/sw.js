@@ -18,19 +18,21 @@
  *   'up-list-sync' BackgroundSync tag → POST /sync/batch
  */
 
-const CACHE_NAME    = 'uplist-v13';
+const CACHE_NAME    = 'uplist-v21';
 const SHELL_ASSETS  = [
   '/',
   '/css/reset.css',
   '/css/base.css',
   '/css/components.css',
   '/app.js',
-  '/components/up-camera.js',
+  '/components/up-camera-session.js',
   '/components/up-draft-field.js',
   '/components/up-item-card.js',
   '/components/up-publish-btn.js',
   '/components/up-toast.js',
   '/components/up-modal.js',
+  '/js/image-utils.js',
+  '/js/photo-manager.js',
   '/manifest.webmanifest',
 ];
 

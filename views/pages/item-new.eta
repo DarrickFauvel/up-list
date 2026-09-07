@@ -1,39 +1,5 @@
 <%~ include('../layout', {
   ...it,
   title: 'New listing',
-  body: `
-<div class="page-wrap" data-signals="{notes: '', imageBase64: '', imageMimeType: '', saving: false}">
-
-  <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
-    <span class="breadcrumb-sep" aria-hidden="true">›</span>
-    <span class="breadcrumb-current">New listing</span>
-  </nav>
-
-  <div class="page-header">
-    <h1>New listing</h1>
-  </div>
-
-  <form class="new-item-form" id="new-item-form"
-    data-on:submit__prevent="$saving = true; fetch('/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: $notes, imageBase64: $imageBase64, imageMimeType: $imageMimeType }) }).then(r => r.json()).then(d => window.location.href = d.redirect)">
-    <up-camera name="image" data-on:capture="$imageBase64 = evt.detail.imageBase64; $imageMimeType = evt.detail.mimeType"></up-camera>
-
-    <div class="field">
-      <label for="notes">Notes <span class="optional">(optional)</span></label>
-      <textarea
-        id="notes"
-        name="notes"
-        rows="3"
-        placeholder="Brand, size, condition — anything useful for the AI…"
-        data-bind:notes
-      ></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit" data-attr:disabled="$saving">
-      <span data-show="!$saving">Continue →</span>
-      <span data-show="$saving" style="display:none">Saving…</span>
-    </button>
-  </form>
-
-</div>
-`}) %>
+  body: await includeAsync('./_item-new-body', it)
+}) %>
