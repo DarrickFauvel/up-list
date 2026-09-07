@@ -1,7 +1,6 @@
 <%
   const initSignals = JSON.stringify({
     generating:      false,
-    genStep:         0,
     error:           '',
     imageBase64:     '',
     imageMimeType:   'image/jpeg',
@@ -13,9 +12,38 @@
     suggested_price: it.item.suggested_price != null ? String(it.item.suggested_price) : '',
     final_price:     it.item.final_price != null ? String(it.item.final_price) : '',
     notes:           it.item.notes ?? '',
+    category_suggestions: [],
+    sku:             it.item.sku ?? '',
+    location:        it.item.location ?? '',
+    cost:            it.item.cost != null ? String(it.item.cost) : '',
+    shipping_weight: it.item.shipping_weight != null ? String(it.item.shipping_weight) : '',
+    shipping_length: it.item.shipping_length != null ? String(it.item.shipping_length) : '',
+    shipping_width:  it.item.shipping_width  != null ? String(it.item.shipping_width)  : '',
+    shipping_height: it.item.shipping_height != null ? String(it.item.shipping_height) : '',
+    ai_status: '',
   });
 %>
-<div class="page-wrap" data-signals="<%= initSignals %>" data-effect="document.title = ($title || 'Draft') + ' — UpList'">
+<script>
+  // Plain (non-module) script — runs synchronously during parsing, so this is
+  // guaranteed to exist before Datastar's own deferred initial scan runs any
+  // data-effect/data-init that calls it. A module script here would NOT be
+  // safe: module scripts are deferred like Datastar's own bootstrap, and the
+  // two can execute in either order, causing "window.computeSku is not a
+  // function" to be thrown from data-effect during Datastar's initial scan —
+  // which then silently aborts processing of data-init on the same element.
+  window.computeSku = (location, cost) => {
+    if (!location || cost === '' || cost == null || Number.isNaN(Number(cost))) return '';
+    const cents = String(Math.round(Number(cost) * 100)).padStart(3, '0');
+    const now  = new Date();
+    const pad  = n => String(n).padStart(2, '0');
+    const date = `${String(now.getFullYear()).slice(2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+    const time = `${pad(now.getHours())}${pad(now.getMinutes())}`;
+    return `${location}-${cents}-${date}-${time}`;
+  };
+</script>
+<div class="page-wrap" data-signals="<%= initSignals %>"
+  data-effect="document.title = ($title || 'Draft') + ' — UpList'; $sku = window.computeSku($location, $cost)"
+  data-init="if (!$title) { @post('/items/<%= it.item.id %>/generate') }">
 
   <!-- Breadcrumb -->
   <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -59,6 +87,7 @@
       <!-- Hidden signal inputs so Datastar carries primary photo to generate -->
       <input type="text" id="sig-imageBase64" data-bind:imageBase64 style="display:none" aria-hidden="true" tabindex="-1">
       <input type="text" id="sig-imageMimeType" data-bind:imageMimeType style="display:none" aria-hidden="true" tabindex="-1">
+      <input type="text" id="sig-category-name" data-bind:category_name style="display:none" aria-hidden="true" tabindex="-1">
 
       <div class="field" style="margin-top:1rem">
         <label for="notes">Notes</label>
@@ -106,16 +135,14 @@
         </div>
       </up-modal>
 
-      <button type="button" class="btn btn-outline btn-full"
-        data-attr:disabled="$generating || !$condition"
-        data-on:click="$genStep = 0; @post('/items/<%= it.item.id %>/generate')"
-        data-on-interval__duration.2s="$generating && ($genStep = ($genStep + 1) % 4)">
+      <button type="button" id="generate-btn" class="btn btn-outline btn-full"
+        data-attr:disabled="$generating"
+        data-on:click="@post('/items/<%= it.item.id %>/generate')">
         <span data-show="!$generating">✦ Generate with AI</span>
-        <span data-show="$generating" style="display:none"
-          data-text="['Analyzing your photo…', 'Reading the details…', 'Writing your listing…', 'Almost there…'][$genStep]"></span>
+        <span data-show="$generating" style="display:none" data-text="$ai_status || 'Generating…'"></span>
       </button>
 
-      <p class="field-hint" data-show="!$condition" <%~ it.item.condition ? 'style="display:none"' : '' %>>Select a condition above to enable generation.</p>
+      <p class="field-hint" data-show="!$condition" <%~ it.item.condition ? 'style="display:none"' : '' %>>Optional: pick a condition to lock it in, or leave it blank and AI will suggest one.</p>
 
       <p class="error-msg" data-show="$error" data-text="$error" style="display:none"></p>
 
@@ -171,6 +198,18 @@
               data-on:input="$category_name = ''">
           </div>
         </div>
+        <div class="category-suggestions" data-show="$category_suggestions.length > 0" style="display:none">
+          <span class="category-suggestions-label">Also consider:</span>
+          <button type="button" class="category-suggestion-chip" data-show="$category_suggestions[0]" style="display:none"
+            data-text="$category_suggestions[0]?.name"
+            data-on:click="$category_id = $category_suggestions[0].id; $category_name = $category_suggestions[0].name"></button>
+          <button type="button" class="category-suggestion-chip" data-show="$category_suggestions[1]" style="display:none"
+            data-text="$category_suggestions[1]?.name"
+            data-on:click="$category_id = $category_suggestions[1].id; $category_name = $category_suggestions[1].name"></button>
+          <button type="button" class="category-suggestion-chip" data-show="$category_suggestions[2]" style="display:none"
+            data-text="$category_suggestions[2]?.name"
+            data-on:click="$category_id = $category_suggestions[2].id; $category_name = $category_suggestions[2].name"></button>
+        </div>
       </div>
 
       <div class="field-row">
@@ -185,6 +224,57 @@
           <input type="number" id="f-price" name="final_price" step="0.01" min="0"
             data-bind:final_price
             placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-location">Bin / Location</label>
+          <input type="text" id="f-location" name="location" placeholder="e.g. BS1"
+            data-bind:location>
+        </div>
+        <div class="field">
+          <label for="f-cost">Your cost (USD)</label>
+          <input type="number" id="f-cost" name="cost" step="0.01" min="0"
+            data-bind:cost
+            placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-sku">SKU</label>
+        <input type="text" id="f-sku" name="sku"
+          data-bind:sku
+          placeholder="Set location + cost to generate" readonly>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-weight">Shipping weight (lb)</label>
+          <input type="number" id="f-weight" name="shipping_weight" step="0.01" min="0"
+            data-bind:shipping_weight
+            placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-length">Length (in)</label>
+          <input type="number" id="f-length" name="shipping_length" step="0.1" min="0"
+            data-bind:shipping_length
+            placeholder="0.0">
+        </div>
+        <div class="field">
+          <label for="f-width">Width (in)</label>
+          <input type="number" id="f-width" name="shipping_width" step="0.1" min="0"
+            data-bind:shipping_width
+            placeholder="0.0">
+        </div>
+        <div class="field">
+          <label for="f-height">Height (in)</label>
+          <input type="number" id="f-height" name="shipping_height" step="0.1" min="0"
+            data-bind:shipping_height
+            placeholder="0.0">
         </div>
       </div>
 
@@ -205,6 +295,34 @@
 
   const ITEM_ID    = '<%= it.item.id %>';
   const MAX_PHOTOS = 20;
+
+  // ── Auto-extract location/cost from notes on page load ───
+  // Deterministic (no AI call needed) so it works immediately, even before a
+  // condition is picked and "Generate with AI" becomes available. Only runs
+  // when both fields are still empty, so it never clobbers a value the
+  // seller already entered or previously saved.
+  (function autoExtractFromNotes() {
+    const locationInput = document.getElementById('f-location');
+    const costInput     = document.getElementById('f-cost');
+    const notesInput    = document.getElementById('notes');
+    if (!locationInput || !costInput || !notesInput) return;
+    if (locationInput.value || costInput.value) return;
+
+    const notes = notesInput.value;
+    if (!notes) return;
+
+    const costMatch = notes.match(/\b(?:cost|paid)\b\s*:?\s*\$?\s*(\d+(?:\.\d{1,2})?)/i);
+    if (costMatch) {
+      costInput.value = costMatch[1];
+      costInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    const locationMatch = notes.match(/\b(?:location|loc|bin)\b\s*:?\s*([A-Za-z0-9][A-Za-z0-9-]{0,9})/i);
+    if (locationMatch) {
+      locationInput.value = locationMatch[1];
+      locationInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  })();
 
   // ── Photo manager ────────────────────────────────────────
   // Load existing photos from DB (images column = JSON array, or fall back to image_url)
@@ -279,14 +397,22 @@
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title:       document.getElementById('f-title').value,
-        description: document.getElementById('f-description').value,
-        category_id: document.getElementById('f-category').value,
-        condition:   document.getElementById('f-condition').value,
-        final_price: document.getElementById('f-price').value,
-        image_url:   photoManager.getPhotos()[0]?.dataUrl ?? null,
-        images:      JSON.stringify(photoManager.getPhotos().map(p => p.dataUrl)),
-        notes:       document.getElementById('notes').value,
+        title:         document.getElementById('f-title').value,
+        description:   document.getElementById('f-description').value,
+        category_id:   document.getElementById('f-category').value,
+        category_name: document.getElementById('sig-category-name').value,
+        condition:     document.getElementById('f-condition').value,
+        final_price:   document.getElementById('f-price').value,
+        image_url:     photoManager.getPhotos()[0]?.dataUrl ?? null,
+        images:        JSON.stringify(photoManager.getPhotos().map(p => p.dataUrl)),
+        notes:         document.getElementById('notes').value,
+        sku:             document.getElementById('f-sku').value,
+        location:        document.getElementById('f-location').value,
+        cost:            document.getElementById('f-cost').value,
+        shipping_weight: document.getElementById('f-weight').value,
+        shipping_length: document.getElementById('f-length').value,
+        shipping_width:  document.getElementById('f-width').value,
+        shipping_height: document.getElementById('f-height').value,
       }),
     });
 

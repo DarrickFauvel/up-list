@@ -85,7 +85,12 @@ router.post('/:id/generate', aiStream);
 // ── Save draft fields ─────────────────────────────────────────────────────────
 
 router.put('/:id', async (req, res) => {
-  const { title, description, item_specifics, category_id, condition, final_price, image_url, images, notes } = req.body;
+  const {
+    title, description, item_specifics, category_id, category_name, condition, final_price,
+    image_url, images, notes,
+    sku, location, cost,
+    shipping_weight, shipping_length, shipping_width, shipping_height,
+  } = req.body;
 
   if (images) {
     let parsed;
@@ -97,17 +102,26 @@ router.put('/:id', async (req, res) => {
 
   await db.execute({
     sql: `UPDATE items
-          SET title=?, description=?, item_specifics=?, category_id=?,
-              condition=?, final_price=?, image_url=?, images=?, notes=?, updated_at=?
+          SET title=?, description=?, item_specifics=?, category_id=?, category_name=?,
+              condition=?, final_price=?, image_url=?, images=?, notes=?,
+              sku=?, location=?, cost=?,
+              shipping_weight=?, shipping_length=?, shipping_width=?, shipping_height=?,
+              updated_at=?
           WHERE id=? AND user_id=?`,
     args: [
       title, description,
       item_specifics ? JSON.stringify(item_specifics) : null,
-      category_id, condition,
+      category_id, category_name ?? null, condition,
       final_price ? Number(final_price) : null,
       image_url ?? null,
       images ?? null,
       notes ?? null,
+      sku ?? null, location ?? null,
+      cost ? Number(cost) : null,
+      shipping_weight ? Number(shipping_weight) : null,
+      shipping_length ? Number(shipping_length) : null,
+      shipping_width  ? Number(shipping_width)  : null,
+      shipping_height ? Number(shipping_height) : null,
       Date.now(),
       req.params.id, req.user.id,
     ],

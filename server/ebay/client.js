@@ -30,7 +30,7 @@ async function ebayFetch(userId, path, options = {}) {
  * Returns the eBay listing ID on success.
  */
 export async function publishItem(userId, item) {
-  const sku = String(item.id);
+  const sku = item.sku || String(item.id);
 
   // 1. Create/replace inventory item
   await ebayFetch(userId, `/sell/inventory/v1/inventory_item/${sku}`, {
@@ -47,6 +47,12 @@ export async function publishItem(userId, item) {
       availability: {
         shipToLocationAvailability: { quantity: 1 },
       },
+      ...(item.shipping_weight && item.shipping_length && item.shipping_width && item.shipping_height
+        ? { packageWeightAndSize: {
+              dimensions: { length: item.shipping_length, width: item.shipping_width, height: item.shipping_height, unit: 'INCH' },
+              weight: { value: item.shipping_weight, unit: 'POUND' },
+            } }
+        : {}),
     }),
   });
 
