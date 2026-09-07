@@ -578,6 +578,33 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
   color: var(--muted);
 }
 
+.category-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .5rem;
+}
+.category-suggestions-label {
+  font-size: .78rem;
+  color: var(--muted);
+}
+.category-suggestion-chip {
+  font-family: var(--sans);
+  font-size: .78rem;
+  color: var(--blue);
+  background: var(--blue-dim);
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  padding: .2rem .65rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.category-suggestion-chip:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

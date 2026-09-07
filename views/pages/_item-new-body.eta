@@ -5,9 +5,24 @@
     notes: draft?.notes ?? '',
     images: JSON.stringify(initImages),
     saving: false,
+    generating: false,
+    error: '',
+    ai_status: '',
+    ai_raw_output: '',
   });
 %>
-<div class="page-wrap" data-signals="<%= initSignals %>">
+<script>
+  // Plain (non-module) script — runs synchronously during parsing, so this is
+  // guaranteed to exist before Datastar's own deferred initial scan runs the
+  // data-effect below. See the identical pattern/comment in
+  // _item-edit-body.eta for why a module script here would NOT be safe.
+  window.draftId = <%~ JSON.stringify(draft?.id ?? null) %>;
+  window.maybeNavigateToDraft = () => {
+    if (window.draftId) window.location.href = `/items/${window.draftId}`;
+  };
+</script>
+<div class="page-wrap" data-signals="<%= initSignals %>"
+  data-effect="if (!$generating && !$error && $ai_raw_output) { window.maybeNavigateToDraft() }">
 
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
@@ -20,7 +35,7 @@
   </div>
 
   <form class="new-item-form" id="new-item-form"
-    data-on:submit__prevent="$saving = true; window.persistAndContinue()">
+    data-on:submit__prevent="$saving = true; setTimeout(() => document.getElementById('new-item-submit').scrollIntoView({behavior:'smooth', block:'center'})); window.persistAndGenerate().then(id => { if (id) { @post('/items/' + id + '/generate') } else { $saving = false } })">
 
     <div class="photo-manager" id="photo-manager">
       <div class="photo-grid" id="photo-grid">
@@ -54,10 +69,13 @@
       ><%= draft?.notes ?? '' %></textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit" data-attr:disabled="$saving || $images === '[]'">
-      <span data-show="!$saving">Continue →</span>
-      <span data-show="$saving" style="display:none">Saving…</span>
+    <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit" data-attr:disabled="$saving || $generating || $images === '[]'">
+      <span data-show="!$saving && !$generating">✦ Generate with AI</span>
+      <span data-show="$saving || $generating" style="display:none">Generating…</span>
     </button>
+
+    <p class="field-hint" data-show="$generating" data-text="'⏳ ' + ($ai_status || 'Generating…') + ' — moving to the draft when done.'"></p>
+    <p class="error-msg" data-show="$error" data-text="$error" style="display:none"></p>
   </form>
 
 </div>
@@ -76,45 +94,52 @@
     return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
   }
 
-  let saveInFlight  = false;
-  let pendingResave = false;
+  // Every call chains onto a single shared promise so overlapping saves run
+  // sequentially instead of racing — and, critically, so a caller that awaits
+  // persistDraft() (like Generate) always waits for a save that was already
+  // in flight to actually finish, rather than a boolean "busy" guard just
+  // dropping the call and leaving draftId unset.
+  let saveChain = Promise.resolve();
 
-  async function persistDraft() {
-    if (saveInFlight) { pendingResave = true; return; }
+  function persistDraft() {
+    saveChain = saveChain.catch(() => {}).then(doPersistOnce);
+    return saveChain;
+  }
+
+  async function doPersistOnce() {
     const notes  = document.getElementById('notes').value;
     const photos = manager.getPhotos();
     if (!notes.trim() && photos.length === 0) return;
 
-    saveInFlight = true;
-    try {
-      if (!draftId) {
-        const res  = await fetch('/items', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notes, images: JSON.stringify(photos.map(p => p.dataUrl)) }),
-        });
-        const data = await res.json();
-        draftId = data.id;
-        history.replaceState(null, '', `/items/new?draft=${draftId}`);
-      } else {
-        await fetch(`/items/${draftId}`, {
-          method:  'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: '', description: '', category_id: '', condition: '', final_price: '',
-            image_url: photos[0]?.dataUrl ?? null,
-            images:    JSON.stringify(photos.map(p => p.dataUrl)),
-            notes,
-          }),
-        });
-      }
-    } finally {
-      saveInFlight = false;
-      if (pendingResave) { pendingResave = false; persistDraft(); }
+    if (!draftId) {
+      const res = await fetch('/items', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes, images: JSON.stringify(photos.map(p => p.dataUrl)) }),
+      });
+      if (!res.ok) throw new Error(`Failed to create draft (${res.status})`);
+      const data = await res.json();
+      draftId = data.id;
+      window.draftId = draftId;
+      history.replaceState(null, '', `/items/new?draft=${draftId}`);
+    } else {
+      const res = await fetch(`/items/${draftId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '', description: '', category_id: '', condition: '', final_price: '',
+          image_url: photos[0]?.dataUrl ?? null,
+          images:    JSON.stringify(photos.map(p => p.dataUrl)),
+          notes,
+        }),
+      });
+      if (!res.ok) throw new Error(`Failed to save draft (${res.status})`);
     }
   }
 
-  const scheduleSave = debounce(persistDraft, 800);
+  const scheduleSave = debounce(() => {
+    persistDraft().catch(err => console.error('[autosave]', err));
+  }, 800);
 
   const manager = createPhotoManager({
     gridEl:        document.getElementById('photo-grid'),
@@ -136,8 +161,17 @@
 
   document.getElementById('notes').addEventListener('input', scheduleSave);
 
-  window.persistAndContinue = async () => {
-    await persistDraft();
-    if (draftId) window.location.href = `/items/${draftId}`;
+  // Creates/updates the draft, then returns its id so the caller (the
+  // Datastar submit handler) can chain `@post('/items/' + id + '/generate')`
+  // right there — staying on this page instead of navigating to /items/:id.
+  window.persistAndGenerate = async () => {
+    try {
+      await persistDraft();
+      if (draftId) return draftId;
+    } catch (err) {
+      console.error('[new-item]', err);
+    }
+    document.querySelector('up-toast')?.show('Could not save — check your connection and try again', 'error');
+    return null;
   };
 </script>

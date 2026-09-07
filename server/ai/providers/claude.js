@@ -29,7 +29,7 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
 
   const response = await client.messages.create({
     model:      process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5',
-    max_tokens: 1024,
+    max_tokens: 1536,
     system:     SYSTEM_PROMPT,
     messages:   [{ role: 'user', content: userContent }],
   });
@@ -39,14 +39,25 @@ export async function* generate({ imageBase64, mimeType, notes, condition }) {
     .map(block => block.text)
     .join('');
 
+  // TEMP (dev aid): surface the raw model text immediately, before parsing,
+  // so it's visible even if extractJson() below fails.
+  yield { field: 'ai_raw_output', value: buffer };
+
   // Parse the complete JSON response
   const json = extractJson(buffer);
   if (!json) throw new Error('AI returned unparseable response');
   applyCondition(json, condition);
 
-  const fields = ['title', 'description', 'item_specifics', 'category_id', 'category_name', 'condition', 'suggested_price'];
+  const fields = [
+    'title', 'description', 'item_specifics', 'category_id', 'category_name',
+    'category_suggestions', 'condition', 'suggested_price', 'location', 'cost',
+  ];
   for (const field of fields) {
-    if (json[field] !== undefined) {
+    // Skip null/undefined rather than yielding it — location/cost are only
+    // present when the model actually found them in the seller's notes, and
+    // yielding null would otherwise blank out whatever the seller already
+    // typed into those fields.
+    if (json[field] !== undefined && json[field] !== null) {
       yield { field, value: json[field] };
     }
   }
