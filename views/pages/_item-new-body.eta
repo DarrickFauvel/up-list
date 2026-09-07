@@ -1,4 +1,13 @@
-<div class="page-wrap" data-signals="{notes: '', images: '[]', saving: false}">
+<%
+  const draft = it.draft ?? null;
+  const initImages = draft?.images ? JSON.parse(draft.images) : (draft?.image_url ? [draft.image_url] : []);
+  const initSignals = JSON.stringify({
+    notes: draft?.notes ?? '',
+    images: JSON.stringify(initImages),
+    saving: false,
+  });
+%>
+<div class="page-wrap" data-signals="<%= initSignals %>">
 
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href="/dashboard" class="breadcrumb-link">Dashboard</a>
@@ -11,7 +20,7 @@
   </div>
 
   <form class="new-item-form" id="new-item-form"
-    data-on:submit__prevent="$saving = true; fetch('/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: $notes, images: $images }) }).then(r => r.json()).then(d => window.location.href = d.redirect)">
+    data-on:submit__prevent="$saving = true; window.persistAndContinue()">
 
     <div class="photo-manager" id="photo-manager">
       <div class="photo-grid" id="photo-grid">
@@ -42,7 +51,7 @@
         rows="3"
         placeholder="Brand, size, condition — anything useful for the AI…"
         data-bind:notes
-      ></textarea>
+      ><%= draft?.notes ?? '' %></textarea>
     </div>
 
     <button type="submit" class="btn btn-primary btn-full btn-lg" id="new-item-submit" data-attr:disabled="$saving || $images === '[]'">
@@ -55,6 +64,57 @@
 
 <script type="module">
   import { createPhotoManager } from '/js/photo-manager.js';
+  import { dataUrlToParts } from '/js/image-utils.js';
+
+  const initImages = <%~ JSON.stringify(initImages) %>;
+  const initialPhotos = initImages.map(dataUrl => ({ dataUrl, ...dataUrlToParts(dataUrl) }));
+
+  let draftId = <%~ JSON.stringify(draft?.id ?? null) %>;
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+
+  let saveInFlight  = false;
+  let pendingResave = false;
+
+  async function persistDraft() {
+    if (saveInFlight) { pendingResave = true; return; }
+    const notes  = document.getElementById('notes').value;
+    const photos = manager.getPhotos();
+    if (!notes.trim() && photos.length === 0) return;
+
+    saveInFlight = true;
+    try {
+      if (!draftId) {
+        const res  = await fetch('/items', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes, images: JSON.stringify(photos.map(p => p.dataUrl)) }),
+        });
+        const data = await res.json();
+        draftId = data.id;
+        history.replaceState(null, '', `/items/new?draft=${draftId}`);
+      } else {
+        await fetch(`/items/${draftId}`, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '', description: '', category_id: '', condition: '', final_price: '',
+            image_url: photos[0]?.dataUrl ?? null,
+            images:    JSON.stringify(photos.map(p => p.dataUrl)),
+            notes,
+          }),
+        });
+      }
+    } finally {
+      saveInFlight = false;
+      if (pendingResave) { pendingResave = false; persistDraft(); }
+    }
+  }
+
+  const scheduleSave = debounce(persistDraft, 800);
 
   const manager = createPhotoManager({
     gridEl:        document.getElementById('photo-grid'),
@@ -63,11 +123,21 @@
     fileInput:     document.getElementById('photo-file-input'),
     cameraSession: document.getElementById('camera-session'),
     maxPhotos:     20,
+    initialPhotos,
     showPrimaryLabel: true,
+    sortable:      true,
     onChange: photos => {
       const input = document.getElementById('sig-images');
       input.value = JSON.stringify(photos.map(p => p.dataUrl));
       input.dispatchEvent(new Event('input', { bubbles: true }));
+      scheduleSave();
     },
   });
+
+  document.getElementById('notes').addEventListener('input', scheduleSave);
+
+  window.persistAndContinue = async () => {
+    await persistDraft();
+    if (draftId) window.location.href = `/items/${draftId}`;
+  };
 </script>
