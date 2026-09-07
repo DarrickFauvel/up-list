@@ -18,7 +18,17 @@ router.get('/', async (req, res) => {
 
 // ── New item form ─────────────────────────────────────────────────────────────
 
-router.get('/new', (req, res) => res.render('pages/item-new'));
+router.get('/new', async (req, res) => {
+  let draft = null;
+  if (req.query.draft) {
+    const result = await db.execute({
+      sql: 'SELECT id, notes, images, image_url FROM items WHERE id = ? AND user_id = ?',
+      args: [req.query.draft, req.user.id],
+    });
+    draft = result.rows[0] ?? null;
+  }
+  res.render('pages/item-new', { draft });
+});
 
 // ── Create draft ──────────────────────────────────────────────────────────────
 
@@ -48,7 +58,7 @@ router.post('/', async (req, res) => {
   });
 
   const redirect = `/items/${id}`;
-  if (req.is('json')) return res.json({ redirect });
+  if (req.is('json')) return res.json({ redirect, id });
   res.redirect(redirect);
 });
 

@@ -18,7 +18,7 @@
  *   'up-list-sync' BackgroundSync tag → POST /sync/batch
  */
 
-const CACHE_NAME    = 'uplist-v21';
+const CACHE_NAME    = 'uplist-v24';
 const SHELL_ASSETS  = [
   '/',
   '/css/reset.css',

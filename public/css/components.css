@@ -856,6 +856,16 @@ up-modal:not(:defined) { display: none; }
   flex-wrap: wrap;
   gap: .5rem;
 }
+.photo-grid--sortable .photo-thumb {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.photo-grid--sortable .photo-thumb img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
 
 .photo-thumb {
   position: relative;
@@ -867,6 +877,7 @@ up-modal:not(:defined) { display: none; }
   flex-shrink: 0;
 }
 .photo-thumb--primary { border-color: var(--blue); }
+.photo-thumb--dragging { opacity: .55; box-shadow: 0 0 0 2px var(--blue); z-index: 2; }
 
 .photo-thumb img {
   width: 100%;
