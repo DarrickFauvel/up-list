@@ -26,10 +26,12 @@ async function ebayFetch(userId, path, options = {}) {
 }
 
 /**
- * Publish an item draft to eBay.
- * Returns the eBay listing ID on success.
+ * Create (or replace) an eBay inventory item and an unpublished offer.
+ * The offer is left as a draft in the seller's eBay account — visible in
+ * Seller Hub for review — until publishOffer() is called on its offerId.
+ * Returns the eBay offerId.
  */
-export async function publishItem(userId, item) {
+export async function createDraftOffer(userId, item) {
   const sku = item.sku || String(item.id);
 
   // 1. Create/replace inventory item
@@ -80,14 +82,21 @@ export async function publishItem(userId, item) {
     }),
   });
 
-  // 3. Publish offer
+  return offer.offerId;
+}
+
+/**
+ * Publish a previously-created draft offer, making the eBay listing live.
+ * Returns the eBay listing ID.
+ */
+export async function publishOffer(userId, offerId) {
   const published = await ebayFetch(
     userId,
-    `/sell/inventory/v1/offer/${offer.offerId}/publish`,
+    `/sell/inventory/v1/offer/${offerId}/publish`,
     { method: 'POST' }
   );
 
-  return published?.listingId ?? offer.offerId;
+  return published?.listingId ?? offerId;
 }
 
 function mapCondition(condition) {

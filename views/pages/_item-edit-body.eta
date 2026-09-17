@@ -280,7 +280,11 @@
 
       <div class="action-row">
         <button type="button" class="btn btn-ghost" id="save-btn">Save draft</button>
-        <up-publish-btn item-id="<%= it.item.id %>"></up-publish-btn>
+        <up-publish-btn
+          item-id="<%= it.item.id %>"
+          status="<%= it.item.status %>"
+          ebay-offer="<%= it.item.ebay_offer_id ? '1' : '0' %>"
+        ></up-publish-btn>
         <button type="button" class="btn btn-ghost btn-danger" id="delete-btn">Delete</button>
       </div>
 
