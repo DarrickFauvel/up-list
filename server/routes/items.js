@@ -9,7 +9,8 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   const result = await db.execute({
-    sql: `SELECT id, title, status, image_url, suggested_price, final_price, updated_at
+    sql: `SELECT id, title, status, suggested_price, final_price, updated_at,
+                 (image_url IS NOT NULL) AS has_image
           FROM items WHERE user_id = ? ORDER BY updated_at DESC`,
     args: [req.user.id],
   });
@@ -78,6 +79,28 @@ router.get('/:id', async (req, res) => {
   res.render('pages/item-edit', { item });
 });
 
+// ── Thumbnail ─────────────────────────────────────────────────────────────────
+// Serves the item's primary photo as a real image response (not inlined base64),
+// so the dashboard can reference it by URL and the browser can cache/lazy-load it.
+
+router.get('/:id/photo', async (req, res) => {
+  const result = await db.execute({
+    sql: 'SELECT image_url FROM items WHERE id = ? AND user_id = ?',
+    args: [req.params.id, req.user.id],
+  });
+  const imageUrl = result.rows[0]?.image_url;
+  if (typeof imageUrl !== 'string' || !imageUrl.startsWith('data:')) {
+    return res.status(404).end();
+  }
+
+  const comma = imageUrl.indexOf(',');
+  const semi  = imageUrl.indexOf(';');
+  res.setHeader('Content-Type', imageUrl.slice(5, semi));
+  // Safe to cache forever: the URL is fingerprinted with ?v=<updated_at> by the caller.
+  res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+  res.send(Buffer.from(imageUrl.slice(comma + 1), 'base64'));
+});
+
 // ── AI generation (SSE) ───────────────────────────────────────────────────────
 
 router.post('/:id/generate', aiStream);
@@ -139,10 +162,10 @@ router.delete('/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Publish to eBay ───────────────────────────────────────────────────────────
+// ── Save as an eBay draft ───────────────────────────────────────────────────
 
 router.post('/:id/publish', async (req, res) => {
-  const { publishItem } = await import('../ebay/client.js');
+  const { createDraftOffer } = await import('../ebay/client.js');
 
   const result = await db.execute({
     sql: 'SELECT * FROM items WHERE id = ? AND user_id = ?',
@@ -152,13 +175,46 @@ router.post('/:id/publish', async (req, res) => {
 
   const item = result.rows[0];
   try {
-    const ebayId = await publishItem(req.user.id, item);
+    const offerId = await createDraftOffer(req.user.id, item);
+    await db.execute({
+      sql: `UPDATE items SET status='ebay_draft', ebay_offer_id=?, updated_at=?
+            WHERE id=?`,
+      args: [offerId, Date.now(), req.params.id],
+    });
+    res.json({ ok: true, ebayOfferId: offerId });
+  } catch (err) {
+    await db.execute({
+      sql: `UPDATE items SET status='failed', updated_at=? WHERE id=?`,
+      args: [Date.now(), req.params.id],
+    });
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// ── Go live on eBay ──────────────────────────────────────────────────────────
+
+router.post('/:id/go-live', async (req, res) => {
+  const { publishOffer } = await import('../ebay/client.js');
+
+  const result = await db.execute({
+    sql: 'SELECT * FROM items WHERE id = ? AND user_id = ?',
+    args: [req.params.id, req.user.id],
+  });
+  if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+
+  const item = result.rows[0];
+  if (!item.ebay_offer_id) {
+    return res.status(400).json({ error: 'No eBay draft to publish yet — save a draft first.' });
+  }
+
+  try {
+    const listingId = await publishOffer(req.user.id, item.ebay_offer_id);
     await db.execute({
       sql: `UPDATE items SET status='published', ebay_listing_id=?, updated_at=?
             WHERE id=?`,
-      args: [ebayId, Date.now(), req.params.id],
+      args: [listingId, Date.now(), req.params.id],
     });
-    res.json({ ok: true, ebayListingId: ebayId });
+    res.json({ ok: true, ebayListingId: listingId });
   } catch (err) {
     await db.execute({
       sql: `UPDATE items SET status='failed', updated_at=? WHERE id=?`,

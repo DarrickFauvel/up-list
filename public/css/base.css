@@ -653,6 +653,7 @@ a:hover { color: var(--blue-dk); text-decoration: underline; }
 .badge::before { content: '●'; font-size: .55em; }
 
 .status-draft, .badge-draft       { background: rgba(245,175,2,.12); color: #9A7000; border: 1px solid rgba(245,175,2,.25); }
+.status-ebay_draft, .badge-ebay_draft { background: var(--blue-dim); color: var(--blue-dk); border: 1px solid var(--blue-glow); }
 .status-published, .badge-published{ background: var(--green-bg); color: #4A8A1C; border: 1px solid rgba(112,178,68,.25); }
 .status-failed, .badge-failed     { background: var(--red-bg); color: var(--red); border: 1px solid rgba(229,50,56,.2); }
 

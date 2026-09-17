@@ -21,7 +21,7 @@
         item-id="<%= item.id %>"
         title="<%= item.title ?? 'Untitled draft' %>"
         status="<%= item.status %>"
-        image-url="<%= item.image_url ?? '' %>"
+        image-url="<%= item.has_image ? ('/items/' + item.id + '/photo?v=' + item.updated_at) : '' %>"
         price="<%= item.final_price ?? item.suggested_price ?? '' %>"
       ></up-item-card>
     </li>

@@ -24,6 +24,15 @@ class UpItemCard extends HTMLElement {
       <button type="button" class="uic-delete" aria-label="Delete listing" title="Delete">✕</button>
     `;
 
+    if (img) {
+      const imgEl = this.querySelector('.uic-img');
+      if (imgEl.complete) {
+        imgEl.classList.add('is-loaded');
+      } else {
+        imgEl.addEventListener('load', () => imgEl.classList.add('is-loaded'), { once: true });
+      }
+    }
+
     this.querySelector('.uic-delete').addEventListener('click', async (e) => {
       e.preventDefault();
       if (!await confirmDelete('This listing will be permanently deleted.')) return;

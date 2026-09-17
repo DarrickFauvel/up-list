@@ -21,7 +21,8 @@ export function createRouter() {
   router.use('/dashboard', requireAuth, async (req, res) => {
     const { db } = await import('./db/client.js');
     const result = await db.execute({
-      sql: `SELECT id, title, status, image_url, suggested_price, final_price, updated_at
+      sql: `SELECT id, title, status, suggested_price, final_price, updated_at,
+                   (image_url IS NOT NULL) AS has_image
             FROM items WHERE user_id = ? ORDER BY updated_at DESC`,
       args: [req.user.id],
     });

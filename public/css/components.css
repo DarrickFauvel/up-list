@@ -705,10 +705,21 @@
 }
 .uic-link:hover { box-shadow: var(--shadow); transform: translateY(-2px); border-color: var(--blue); text-decoration: none; }
 
-.uic-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+.uic-img {
+  width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+  background: var(--bg-3);
+  opacity: 0; transform: scale(1.02);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.uic-img.is-loaded { opacity: 1; transform: scale(1); }
 .uic-img-placeholder {
   display: flex; align-items: center; justify-content: center;
   background: var(--bg-3); font-size: 2rem;
+}
+.uic-img.uic-img-placeholder { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uic-img { transition: opacity .15s ease; transform: none; }
 }
 
 .uic-body { padding: var(--sp-3) var(--sp-4) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
@@ -728,6 +739,8 @@
 .upb-loading { background: var(--blue-dk); color: #fff; border-color: var(--blue-dk); opacity: .75; cursor: wait; }
 .upb-success { background: var(--green); color: #fff; border-color: var(--green); }
 .upb-error   { background: var(--red);   color: #fff; border-color: var(--red); }
+.upb-published { background: var(--green-bg); color: #4A8A1C; border-color: rgba(112,178,68,.25); cursor: default; }
+.upb-hint    { margin: var(--sp-2) 0 0; font-size: .8rem; color: var(--muted); max-width: 32rem; }
 
 /* ── up-toast ────────────────────────────────────────────── */
 .up-toast {
